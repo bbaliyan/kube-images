@@ -11,7 +11,7 @@ devbox_user: almalinux
 # The pinned dev container image. It is pulled at build time so the first run is fast.
 devbox_devenv_image: ghcr.io/bbaliyan/kube-devenv
 # renovate: datasource=docker depName=ghcr.io/bbaliyan/kube-devenv
-devbox_devenv_version: "0.11.1"
+devbox_devenv_version: "0.11.2"
 
 devbox_docker_repo_baseurl: "https://download.docker.com/linux/rhel/$releasever/$basearch/stable"
 devbox_docker_repo_gpgkey: "https://download.docker.com/linux/rhel/gpg"
