@@ -198,6 +198,16 @@ assert i_meta < i_clean
 " "${role}/tasks/main.yml"
 expect_not "no lint skip for no-handler in the devbox config" grep -qE 'no-handler|no-changed-when' "${here}/../.ansible-lint"
 
+# --- the kernel and the reboot
+expect "packages include the extra kernel modules" grep -q 'kernel-modules-extra' "${role}/tasks/packages.yml"
+expect "packages reboot into a new kernel" grep -q 'ansible.builtin.reboot' "${role}/tasks/packages.yml"
+expect "the reboot comes before the firewall units" python3 -c "
+import sys, yaml
+t = yaml.safe_load(open(sys.argv[1]))
+imports = [str(x.get('ansible.builtin.import_tasks', '')) for x in t]
+assert imports.index('packages.yml') < imports.index('firewall.yml')
+" "${role}/tasks/main.yml"
+
 # --- units
 for unit in "$role"/files/*.service "$role"/files/*.timer; do
   name="$(basename "$unit")"

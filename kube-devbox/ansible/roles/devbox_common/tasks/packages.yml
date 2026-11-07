@@ -25,6 +25,8 @@
       - docker-buildx-plugin
       - docker-compose-plugin
       - tailscale
+      - kernel-modules-extra
+      - dnf-plugins-core
       - openssh-server
       - nftables
       - dnf-automatic
@@ -34,3 +36,20 @@
       - jq
     state: present
     update_cache: true
+
+# The install can pull in a newer kernel. The running kernel then lacks the netfilter
+# modules that Docker needs (such as xt_addrtype), and dockerd fails to start. Reboot
+# now, before the firewall units are enabled, so Packer can still log in.
+- name: Packages | is a reboot needed for a new kernel
+  ansible.builtin.command: dnf needs-restarting -r
+  register: devbox_needs_reboot
+  changed_when: false
+  failed_when: devbox_needs_reboot.rc not in [0, 1]
+  when: devbox_manage_services | bool
+
+- name: Packages | reboot into the new kernel
+  ansible.builtin.reboot:
+    reboot_timeout: 600
+  when:
+    - devbox_manage_services | bool
+    - devbox_needs_reboot.rc == 1
