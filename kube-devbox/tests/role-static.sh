@@ -208,6 +208,15 @@ imports = [str(x.get('ansible.builtin.import_tasks', '')) for x in t]
 assert imports.index('packages.yml') < imports.index('firewall.yml')
 " "${role}/tasks/main.yml"
 
+expect "the role waits for cloud-init before it installs packages" python3 -c "
+import sys, yaml
+t = yaml.safe_load(open(sys.argv[1]))
+cmds = [x.get('ansible.builtin.command', '') for x in t]
+imports = [str(x.get('ansible.builtin.import_tasks', '')) for x in t]
+assert cmds.index('cloud-init status --wait') < imports.index('packages.yml')
+" "${role}/tasks/main.yml"
+expect "the package install waits for the rpm lock" grep -q 'lock_timeout' "${role}/tasks/packages.yml"
+
 # --- units
 for unit in "$role"/files/*.service "$role"/files/*.timer; do
   name="$(basename "$unit")"
