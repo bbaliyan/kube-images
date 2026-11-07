@@ -7,10 +7,12 @@ This template clones the stock AlmaLinux 10 seed template and runs the shared
 ## Build
 
 1. Verify that the seed template exists. The build clones it.
-2. Copy `proxmox.auto.pkrvars.hcl.example` to `proxmox.auto.pkrvars.hcl`.
-3. Set the Proxmox URL, the API token and the site values in that file.
-4. Run `packer init .`.
-5. Run `packer build .`.
+2. Run `source ~/.kube-compute/proxmox` in the terminal. If the token has expired, run `kube-proxmox-login` first.
+3. Copy `proxmox.auto.pkrvars.hcl.example` to `proxmox.auto.pkrvars.hcl`.
+4. Set the node, the seed template ID, the datastore and the bridge in that file. Do not set the Proxmox URL or the API token there.
+5. Run `./build.sh`.
+
+`build.sh` reads the Proxmox endpoint and token from `~/.kube-compute/`, the same as the `kube-node` build, then runs `packer init` and `packer build`.
 
 The build VM must reach the template VM's address. The bridge name is an input.
 
