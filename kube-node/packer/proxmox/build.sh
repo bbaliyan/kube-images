@@ -1,26 +1,11 @@
 #!/usr/bin/env bash
 # Wrapper for 'packer build': re-derives Proxmox credentials, resolves
 # k8s/Cilium/Argo CD versions, and renders the genesis manifests before every
-# build.
-#
-# Credentials are re-derived here (rather than relying on the devcontainer's
-# own PKR_VAR_* export, which only runs at shell start) because
-# kube-proxmox-login's refresh instruction updates PROXMOX_VE_API_TOKEN in
-# the current shell but not an already-exported PKR_VAR_proxmox_*, so a
-# same-terminal refresh followed by a bare 'packer build' would otherwise
-# fail with a 401 even though PROXMOX_VE_API_TOKEN itself is current.
+# build. The credentials come from the shared scripts/proxmox-env.sh.
 set -euo pipefail
 
-test -f /root/.kube-compute/proxmox && source /root/.kube-compute/proxmox
-test -f /root/.kube-compute/proxmox-endpoint && source /root/.kube-compute/proxmox-endpoint
-
-if [ -n "${PROXMOX_VE_ENDPOINT:-}" ]; then
-  export PKR_VAR_proxmox_url="${PROXMOX_VE_ENDPOINT}/api2/json"
-fi
-if [ -n "${PROXMOX_VE_API_TOKEN:-}" ]; then
-  export PKR_VAR_proxmox_api_token_id="${PROXMOX_VE_API_TOKEN%%=*}"
-  export PKR_VAR_proxmox_api_token_secret="${PROXMOX_VE_API_TOKEN#*=}"
-fi
+# shellcheck source=../../../scripts/proxmox-env.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/proxmox-env.sh"
 
 # ---- k8s/Cilium/Argo CD version resolution ----------------------------------
 : "${KUBE_PLATFORM_REPO_URL:=https://github.com/bbaliyan/kube-platform.git}"
