@@ -1,8 +1,5 @@
 # Copy to proxmox.auto.pkrvars.hcl and set the real values there. That file is not committed.
-# Keep the API token in that file or in the environment, never in this example.
-# proxmox_url              = "https://pve.example.com:8006/api2/json"
-# proxmox_api_token_id     = "root@pam!packer"
-# proxmox_api_token_secret = "REPLACE_ME"
+# Do not set the Proxmox URL or the API token here. build.sh takes them from ~/.kube-compute/.
 
 proxmox_node        = "pve"
 seed_template_vm_id = 9000

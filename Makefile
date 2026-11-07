@@ -10,7 +10,7 @@ SHELL := bash
 
 CHECKS    ?= /usr/share/kube-devenv/checks
 DEVBOX_ROLE := kube-devbox/ansible/roles/devbox_common
-SCRIPTS   := $(wildcard kube-node/packer/*/*.sh) $(wildcard kube-devbox/packer/*/*.sh) $(wildcard kube-devbox/scripts/*.sh) $(wildcard kube-devbox/tests/*.sh) $(DEVBOX_ROLE)/files/devbox-firewall-apply $(DEVBOX_ROLE)/files/devbox-tailscale-up $(wildcard .devcontainer/*.sh) .githooks/pre-commit
+SCRIPTS   := $(wildcard scripts/*.sh) $(wildcard kube-node/packer/*/*.sh) $(wildcard kube-devbox/packer/*/*.sh) $(wildcard kube-devbox/scripts/*.sh) $(wildcard kube-devbox/tests/*.sh) $(DEVBOX_ROLE)/files/devbox-firewall-apply $(DEVBOX_ROLE)/files/devbox-tailscale-up $(wildcard .devcontainer/*.sh) .githooks/pre-commit
 BASE_REF  ?= $(shell git rev-parse --verify --quiet origin/main)
 
 # This repo has no DCO, so commits need no Signed-off-by line.
