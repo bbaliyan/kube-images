@@ -36,6 +36,7 @@
       - jq
     state: present
     update_cache: true
+    lock_timeout: 300
 
 # The install can pull in a newer kernel. The running kernel then lacks the netfilter
 # modules that Docker needs (such as xt_addrtype), and dockerd fails to start. Reboot

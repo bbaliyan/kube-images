@@ -8,6 +8,15 @@
     fail_msg: "The dev box image builds on AlmaLinux 10 only."
     success_msg: "Base image is AlmaLinux 10."
 
+# The seed runs 'dnf upgrade' in cloud-init at the first boot. It holds the rpm lock and can
+# install a new kernel, so the role waits for cloud-init before it touches packages.
+- name: Wait | cloud-init has finished its first-boot work
+  ansible.builtin.command: cloud-init status --wait
+  register: devbox_cloud_init_status
+  changed_when: false
+  failed_when: devbox_cloud_init_status.rc not in [0, 2]
+  when: devbox_manage_services | bool
+
 - name: Import | packages and repositories
   ansible.builtin.import_tasks: packages.yml
 
