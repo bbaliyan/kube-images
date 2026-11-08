@@ -14,7 +14,7 @@ bake_copy_gitops_manifests: true
 
 # Where the node bootstrap program comes from. Bump the ref when it changes.
 kube_compute_raw_base: "https://raw.githubusercontent.com/bbaliyan/kube-compute"
-kube_compute_ref: "69ef5e2fb1bcf057e6afcde4465e14aa0e64e4bc"
+kube_compute_ref: "3d87d21c1ffef2ea7830a562f7770295ceab5de9"
 
 # Optional CA certificate on the build host, baked into the trust store.
 trusted_ca_path: ""
