@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Wrapper for 'packer build': re-derives Proxmox credentials, resolves the
-# k8s version, and renders the boot-time Cilium manifest before every build. The credentials come
-# from the shared scripts/proxmox-env.sh.
+# k8s version, and renders the boot-time Cilium manifest before every build.
+# The credentials come from the shared scripts/proxmox-env.sh.
 set -euo pipefail
 
 # shellcheck source=../../../scripts/proxmox-env.sh
