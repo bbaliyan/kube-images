@@ -7,14 +7,19 @@ variable "aws_region" {
 
 variable "instance_type" {
   type        = string
-  default     = "c8a.medium"
-  description = "EC2 instance type of the build instance. It must support ami_architecture. It does not limit the instance types that can launch the AMI."
+  default     = "c7a.medium"
+  description = "EC2 instance type of the build instance. It must support ami_architecture. The type must be offered in aws_region. It does not limit the instance types that can launch the AMI."
 }
 
 variable "ami_architecture" {
   type        = string
   default     = "x86_64"
   description = "CPU architecture to build for, x86_64 or arm64. It must match the architecture of instance_type."
+
+  validation {
+    condition     = contains(["x86_64", "arm64"], var.ami_architecture)
+    error_message = "The value of ami_architecture must be x86_64 or arm64."
+  }
 }
 
 variable "k8s_version" {
@@ -61,6 +66,11 @@ variable "base_ami_id" {
   type        = string
   default     = ""
   description = "Exact base AMI ID, e.g. ami-0123456789abcdef0. If set, it replaces the name filter. The account in base_ami_owners must own it."
+
+  validation {
+    condition     = var.base_ami_id == "" || startswith(var.base_ami_id, "ami-")
+    error_message = "The value of base_ami_id must be empty or start with ami-."
+  }
 }
 
 variable "vpc_id" {
@@ -132,7 +142,7 @@ variable "kms_key_id" {
 variable "region_kms_key_ids" {
   type        = map(string)
   default     = {}
-  description = "KMS key per replica region, as { region = key }. A key works in one region only, so each region in region_replicas that uses a customer-managed key needs an entry."
+  description = "KMS key per replica region, as { region = key }. It applies only if encrypt_boot is true. A key works in one region only, so each region in region_replicas that uses a customer-managed key needs an entry."
 }
 
 variable "ami_users" {

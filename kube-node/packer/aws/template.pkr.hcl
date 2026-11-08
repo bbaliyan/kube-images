@@ -97,8 +97,8 @@ source "amazon-ebs" "rke2" {
   # null keeps the encryption setting of the base image. false would force an
   # unencrypted AMI.
   encrypt_boot       = var.encrypt_boot ? true : null
-  kms_key_id         = var.kms_key_id
-  region_kms_key_ids = var.region_kms_key_ids
+  kms_key_id         = var.encrypt_boot ? var.kms_key_id : null
+  region_kms_key_ids = var.encrypt_boot ? var.region_kms_key_ids : null
   ami_users          = var.ami_users
   snapshot_users     = var.ami_users
 

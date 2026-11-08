@@ -28,8 +28,10 @@ The build connects to the instance over Session Manager. The instance needs no i
 The default build is for x86_64. For arm64, set both the architecture and the instance type as environment variables, because `build.sh` passes its arguments to `packer init`:
 
 ```bash
-PKR_VAR_ami_architecture=arm64 PKR_VAR_instance_type=c9g.medium ./build.sh .
+PKR_VAR_ami_architecture=arm64 PKR_VAR_instance_type=c7g.medium ./build.sh .
 ```
+
+The instance type must be offered in `aws_region`. If it is not, set `instance_type` to a type of the same architecture that the region offers.
 
 A real build needs an AWS account. The checks in this repository do not run it.
 
@@ -145,7 +147,7 @@ The data source `amazon-ami.base` in `template.pkr.hcl` finds the newest AMI tha
 
 ## Profile a slow build
 
-Run `./build-profile.sh .` instead of `./build.sh .`. It adds Packer timestamps and Ansible task timings, and saves the full output in `build-logs/`. The script installs the `community.general` Ansible collection for the timings.
+Run `../../scripts/build-profile.sh .` instead of `./build.sh .`. It adds Packer timestamps and Ansible task timings, and saves the full output in `build-logs/`. The script installs the `community.general` Ansible collection for the timings.
 
 ## Prune old images
 
