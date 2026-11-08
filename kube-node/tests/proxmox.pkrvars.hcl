@@ -5,6 +5,4 @@ proxmox_node             = "pve"
 seed_template_vm_id      = 9000
 disk_datastore_id        = "local"
 k8s_version              = "v1.0.0+rke2r1"
-cilium_version           = "1.0.0"
-argocd_version           = "1.0.0"
 rendered_manifests_dir   = "."

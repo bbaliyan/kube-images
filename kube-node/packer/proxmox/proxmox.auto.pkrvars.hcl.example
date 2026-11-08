@@ -6,9 +6,8 @@
 # proxmox_api_token_id      = "root@pam!packer"
 # proxmox_api_token_secret  = "REPLACE_ME"
 
-# k8s_version/cilium_version/argocd_version are deliberately NOT set here —
-# build.sh resolves them automatically before every build. A var-file entry
-# of the same name would silently outrank that resolution; see README.md.
+# k8s_version is deliberately NOT set here. build.sh reads it from
+# kube-node/versions/rke2-version.yaml. A var-file entry would silently outrank it; see README.md.
 
 proxmox_node                     = "pve"
 seed_template_vm_id              = 9000

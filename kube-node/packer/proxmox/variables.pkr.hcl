@@ -60,19 +60,9 @@ variable "k8s_version" {
   description = "RKE2 release string to bake, e.g. v1.36.1+rke2r1. Resolved automatically by build.sh — do not set in proxmox.auto.pkrvars.hcl, it silently outranks build.sh's fetch."
 }
 
-variable "cilium_version" {
-  type        = string
-  description = "Cilium Helm chart version, genesis-installed into /opt/kube-compute/manifests/cilium.yaml. Resolved automatically by build.sh — same do-not-set caveat as k8s_version."
-}
-
-variable "argocd_version" {
-  type        = string
-  description = "Argo CD Helm chart version, genesis-installed into /opt/kube-compute/manifests/00-argocd.yaml. Resolved automatically by build.sh — same do-not-set caveat as k8s_version."
-}
-
 variable "rendered_manifests_dir" {
   type        = string
-  description = "Directory containing the pre-rendered cilium.yaml/00-argocd.yaml to copy onto the template. Always set by build.sh — no default, so a bare 'packer build' fails loudly instead of baking a stale manifest."
+  description = "Directory containing the pre-rendered cilium.yaml to copy onto the template. Always set by build.sh — no default, so a bare 'packer build' fails loudly instead of baking a stale manifest."
 }
 
 variable "trusted_ca_path" {

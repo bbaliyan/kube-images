@@ -1,57 +1,38 @@
 #!/usr/bin/env bash
-# Wrapper for 'packer build': re-derives Proxmox credentials, resolves
-# k8s/Cilium/Argo CD versions, and renders the genesis manifests before every
-# build. The credentials come from the shared scripts/proxmox-env.sh.
+# Wrapper for 'packer build': re-derives Proxmox credentials, reads the RKE2
+# version from the shared pin file, and renders the boot-time Cilium manifest
+# before every build. The credentials come from the shared scripts/proxmox-env.sh.
 set -euo pipefail
 
 # shellcheck source=../../../scripts/proxmox-env.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/proxmox-env.sh"
 
-# ---- k8s/Cilium/Argo CD version resolution ----------------------------------
-: "${KUBE_PLATFORM_REPO_URL:=https://github.com/bbaliyan/kube-platform.git}"
-: "${KUBE_PLATFORM_REVISION:=main}"
+# ---- version pins ------------------------------------------------------------
+versions_dir="$(dirname "${BASH_SOURCE[0]}")/../../versions"
 
-# PKR_VAR_* env vars lose to a *.auto.pkrvars.hcl entry of the same name, so
-# these three must NOT be set in proxmox.auto.pkrvars.hcl — see README.md.
-if [ -z "${PKR_VAR_k8s_version:-}" ] || [ -z "${PKR_VAR_cilium_version:-}" ] || [ -z "${PKR_VAR_argocd_version:-}" ]; then
-  platform_versions_url="$(printf '%s' "${KUBE_PLATFORM_REPO_URL}" | sed -E 's#^https://github\.com/#https://raw.githubusercontent.com/#; s#\.git$##')/${KUBE_PLATFORM_REVISION}/platform/platform-versions/values.yaml"
-  platform_versions="$(curl -fsSL "${platform_versions_url}")"
+pin() { # pin <file> <key>
+  python3 -c 'import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))[sys.argv[2]])' "${versions_dir}/$1" "$2"
+}
 
-  : "${PKR_VAR_k8s_version:=$(printf '%s' "${platform_versions}" | python3 -c 'import sys, yaml; print(yaml.safe_load(sys.stdin)["k8sVersion"])')}"
-  : "${PKR_VAR_cilium_version:=$(printf '%s' "${platform_versions}" | python3 -c 'import sys, yaml; print(yaml.safe_load(sys.stdin)["ciliumVersion"])')}"
-  : "${PKR_VAR_argocd_version:=$(printf '%s' "${platform_versions}" | python3 -c 'import sys, yaml; print(yaml.safe_load(sys.stdin)["argocdVersion"])')}"
-  export PKR_VAR_k8s_version PKR_VAR_cilium_version PKR_VAR_argocd_version
+# A PKR_VAR_* env var loses to a *.auto.pkrvars.hcl entry of the same name, so
+# k8s_version must NOT be set in proxmox.auto.pkrvars.hcl - see README.md.
+if [ -z "${PKR_VAR_k8s_version:-}" ]; then
+  PKR_VAR_k8s_version="$(pin rke2-version.yaml rke2Version)"
+  export PKR_VAR_k8s_version
 fi
 
-# ---- Genesis manifest render (build host, not the VM being baked) ---------
-# Keeps Argo CD's ~1.9 MB of CRDs out of node-bootstrap's cloud-init payload
-# (Proxmox's cicustom snippet cap is 1 MiB).
+# ---- Cilium manifest render (build host, not the VM being baked) ----------
+cilium_version="$(pin cilium-version.yaml ciliumVersion)"
 render_dir="$(mktemp -d)"
 trap 'rm -rf "${render_dir}"' EXIT
 
 helm template cilium cilium \
   --repo https://helm.cilium.io/ \
-  --version "${PKR_VAR_cilium_version}" \
+  --version "${cilium_version}" \
   --namespace kube-system \
   --include-crds \
   -f helm-values/cilium-values.yaml \
   >"${render_dir}/cilium.yaml"
-
-{
-  cat <<-'EOF'
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: argocd
-	---
-	EOF
-  helm template argocd argo-cd \
-    --repo https://argoproj.github.io/argo-helm \
-    --version "${PKR_VAR_argocd_version}" \
-    --namespace argocd \
-    --include-crds \
-    -f helm-values/argocd-values.yaml
-} >"${render_dir}/00-argocd.yaml"
 
 export PKR_VAR_rendered_manifests_dir="${render_dir}"
 

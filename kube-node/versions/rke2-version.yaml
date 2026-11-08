@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
+# The RKE2 release baked into the image. Every provider's build reads this file.
+# renovate: datasource=github-releases depName=rancher/rke2
+rke2Version: v1.37.2+rke2r1
