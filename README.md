@@ -29,6 +29,19 @@ the Proxmox README for how to override a pin and the bump order.
 `/opt/kube-compute/bootstrap.sh`, from the commit pinned in its `defaults/main.yml`;
 bump the pin when that program changes. The bake fails if the program has no
 `BOOTSTRAP_CONTRACT=<n>` line, so an image never boots a node it cannot bootstrap.
+The baked program and the `kube-compute` module share one contract number. The
+program refuses to run against a `node.env` written for another number, so a
+rebuilt image with a module of a different contract fails at boot.
+
+Roll out a change to the bootstrap program in this order:
+
+1. Merge the change in `kube-compute`.
+2. Set `kube_compute_ref` here to the merge commit, and merge that change.
+3. Rebuild the images.
+4. Pin and tag the `kube-compute` module in the consumer.
+
+Renovate does not bump `kube_compute_ref`. Change it by hand.
+
 `trusted_ca_path` optionally bakes a CA certificate into the trust store; set
 `trusted_ca_in_image = true` in `kube-compute` for nodes booting that image.
 
