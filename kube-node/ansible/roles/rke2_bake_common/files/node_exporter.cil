@@ -1,0 +1,27 @@
+; SPDX-License-Identifier: Apache-2.0
+; A confined SELinux domain for node-exporter, so the pod needs neither
+; spc_t nor privileged. Install it together with the udica templates that
+; container-selinux ships (see tasks/main.yml). Adds:
+;   node_exporter.process    the container domain (container_t plus the rules below)
+;   node_exporter.textfile_t the type of the textfile collector directory
+;
+; Loaded and tested on an SELinux-enforcing node: a pod with this domain reads
+; /proc/1/mountinfo and the textfile directory, and the same pod with the default
+; domain is denied.
+
+(block node_exporter
+  (blockinherit container)
+  (blockinherit net_container)
+
+  (type textfile_t)
+  (roletype object_r textfile_t)
+  (typeattributeset file_type (textfile_t))
+
+  ; Read the metric files that the privileged collector writes.
+  (allow process textfile_t (dir (getattr open read search ioctl lock)))
+  (allow process textfile_t (file (getattr open read ioctl lock map)))
+
+  ; The filesystem collector reads /proc/1/mountinfo, and PID 1 runs as init_t.
+  (allow process init_t (dir (getattr open search)))
+  (allow process init_t (file (getattr open read)))
+)

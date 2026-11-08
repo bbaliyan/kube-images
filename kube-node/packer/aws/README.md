@@ -141,6 +141,11 @@ The hook has limits:
 - It must not change the RKE2 install or the Cilium manifest. Change the pin files instead.
 - The cleanup runs after it. The cleanup removes the machine ID, the SSH host keys, the build SSH key and the cloud-init state. Changes to those do not reach the image.
 
+## SELinux policy for node-exporter
+
+The image loads a small SELinux module, so node-exporter can run confined on an SELinux-enforcing node. It adds the domain `node_exporter.process` and the file type `node_exporter.textfile_t`. A workload selects the domain with `seLinuxOptions.type: node_exporter.process`. Set this only after the image holds the module, or the pod does not start. The module is not compiled or loaded by the authors yet. For what it does and how to test it on one node first, see [the role README](../../ansible/roles/rke2_bake_common/README.md).
+
+
 ## Base image
 
 The data source `amazon-ami.base` in `template.pkr.hcl` finds the newest AMI that matches `base_ami_owners`, `base_ami_name` and the architecture. The `source-ami-id` tag records the AMI that the build used. The role updates all packages, so the point release of the base image does not matter much.
