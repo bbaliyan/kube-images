@@ -47,13 +47,17 @@ lint-pipelines:
 	tests/check-gitlab-ci.sh
 
 # Fixture variables stand in for the real ones, so no cloud access is needed.
-validate: validate-packer-proxmox validate-seed validate-devbox
+validate: validate-packer-proxmox validate-packer-aws validate-seed validate-devbox
 
 # Packer reads the key file at validate time, so give it a throwaway one.
 validate-packer-proxmox:
 	rm -f /tmp/validate-key /tmp/validate-key.pub
 	ssh-keygen -q -t ed25519 -N '' -f /tmp/validate-key
 	cd kube-node/packer/proxmox && packer init . && packer validate 		-var-file=$(CURDIR)/kube-node/tests/proxmox.pkrvars.hcl -var ssh_private_key_file=/tmp/validate-key .
+
+# The AWS template reads no credentials at validate time, so the fixture is enough.
+validate-packer-aws:
+	cd kube-node/packer/aws && packer init . && packer validate -var-file=$(CURDIR)/kube-node/tests/aws.pkrvars.hcl .
 
 # The dev box template needs no cloud access either. It makes its own throwaway key.
 validate-devbox:
