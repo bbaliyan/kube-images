@@ -1,0 +1,7 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+# Runs when extra_playbook_path is empty.
+- name: No extra customization
+  hosts: all
+  gather_facts: false
+  tasks: []

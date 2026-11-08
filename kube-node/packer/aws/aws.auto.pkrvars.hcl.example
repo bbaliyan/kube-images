@@ -1,0 +1,18 @@
+# Copy this file to aws.auto.pkrvars.hcl and edit it.
+#
+# Do not set k8s_version here. build.sh reads it from versions/rke2-version.yaml,
+# and a value in this file would outrank that. See README.md.
+
+aws_region = "us-east-1"
+
+# Build network. Without these, the build uses the default VPC.
+# vpc_id    = "vpc-0123456789abcdef0"
+# subnet_id = "subnet-0123456789abcdef0"
+
+# See README.md, "Customizing the image".
+# trusted_ca_path     = "/path/to/ca.pem"
+# extra_playbook_path = "/path/to/extra.yml"
+# build_proxy_url     = "http://proxy.example.com:3128"
+# extra_tags          = { Owner = "platform-team" }
+# region_replicas     = ["eu-west-1"]
+# ami_users           = ["123456789012"]

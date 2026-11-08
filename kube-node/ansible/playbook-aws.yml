@@ -1,0 +1,36 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+- name: RKE2 node bake (AlmaLinux 10, AWS)
+  hosts: all
+  gather_facts: true
+  become: true
+  vars:
+    bake_proxy_env: >-
+      {{ {} if build_proxy_url | default('') | length == 0 else
+      {'http_proxy': build_proxy_url, 'https_proxy': build_proxy_url,
+      'no_proxy': 'localhost,127.0.0.1,169.254.169.254'} }}
+  environment: "{{ bake_proxy_env }}"
+  pre_tasks:
+    - name: inputs | require every value the Packer template passes
+      ansible.builtin.assert:
+        that:
+          - k8s_version is defined and k8s_version is match('^v[0-9]+[.][0-9]+[.][0-9]+[+]rke2r[0-9]+$')
+          - rendered_manifests_dir is defined and rendered_manifests_dir | length > 0
+          - aws_region is defined and aws_region | length > 0
+        fail_msg: k8s_version, rendered_manifests_dir and aws_region come from template.pkr.hcl. Build with build.sh.
+      tags: [always]
+  roles:
+    - rke2_bake_common
+    - rke2_bake_aws
+
+# The hook runs here: after the base role and before the cleanup, which
+# removes the build-time SSH key.
+- name: Extra customization
+  ansible.builtin.import_playbook: "{{ extra_playbook_path | default('extra-playbook-none.yml', true) }}"
+
+- name: Image cleanup
+  hosts: all
+  gather_facts: false
+  become: true
+  roles:
+    - rke2_bake_template_prep

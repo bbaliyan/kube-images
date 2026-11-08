@@ -32,10 +32,11 @@ bump the pin when that program changes. The bake fails if the program has no
 `trusted_ca_path` optionally bakes a CA certificate into the trust store; set
 `trusted_ca_in_image = true` in `kube-compute` for nodes booting that image.
 
-The `rke2_bake_common` Ansible role handles OS prep, RKE2 install, and template
-cleanup. The `rke2_bake_proxmox` role adds the Proxmox-only package
-(`iscsi-initiator-utils`). The image carries no cloud agent: the seed template
-installs `qemu-guest-agent`.
+The `rke2_bake_common` Ansible role handles OS prep and the RKE2 install, for
+every provider. The `rke2_bake_template_prep` role cleans the image and runs last.
+The `rke2_bake_proxmox` role adds the Proxmox-only package
+(`iscsi-initiator-utils`). The `rke2_bake_aws` role makes sure the AWS Systems
+Manager agent is present.
 
 The names and tags of the images it builds still say `kube-image` (for
 example the `kube-image` tag on Proxmox templates). They are image
@@ -44,8 +45,8 @@ existing images depend on them.
 
 ## Providers
 
-The node image is for Proxmox only. See `kube-node/packer/proxmox/README.md`.
-There is no AWS or Azure build. The cluster autoscaler and Cluster API are not
+The node image has a Proxmox build and an AWS build. See `kube-node/packer/proxmox/README.md` and `kube-node/packer/aws/README.md`.
+There is no Azure build. The cluster autoscaler and Cluster API are not
 part of the image either.
 
 ## Proxmox credentials

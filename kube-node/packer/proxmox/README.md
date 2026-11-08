@@ -108,7 +108,7 @@ from kube-platform's published `argocd-bootstrap.yaml`.
 The Cilium chart version is pinned in `kube-node/versions/cilium-version.yaml`.
 Renovate updates it with a longer `minimumReleaseAge` than kube-platform's
 Cilium rule, so the platform takes each release first. The values are in
-`helm-values/cilium-values.yaml`. They give a working CNI and nothing more.
+`kube-node/helm-values/cilium-values.yaml`. They give a working CNI and nothing more.
 The platform manages Cilium after boot.
 
 ## Version pins
@@ -151,7 +151,7 @@ old module, fails at first boot.
 
 ## Profiling a slow build
 
-`./build-profile.sh .` runs the same build as `./build.sh .` with Packer/
+`../../scripts/build-profile.sh .` runs the same build as `./build.sh .` with Packer/
 Ansible timing instrumentation turned on, and tees the full output to
 `build-logs/<timestamp>.log` for later review:
 

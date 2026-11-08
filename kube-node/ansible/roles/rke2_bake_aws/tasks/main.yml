@@ -1,0 +1,29 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+# AWS-only bake tasks, run alongside rke2_bake_common by
+# kube-node/ansible/playbook-aws.yml.
+
+# kube-compute reaches the nodes over Session Manager only. The AlmaLinux AMI
+# ships the agent, but this task makes the dependency explicit, so a future
+# AMI without it fails the build instead of leaving every node unreachable.
+# The agent starts on boot through kube-compute, so it is not started here.
+- name: aws | verify the amazon-ssm-agent binary
+  ansible.builtin.stat:
+    path: /usr/bin/amazon-ssm-agent
+  register: ssm_agent
+
+# The GPG check is off on purpose. The RPM comes over HTTPS from the vendor's
+# own bucket, and only when the binary is missing. AWS rotates the signing key
+# about once a year, so a key pinned here would break builds.
+- name: aws | install amazon-ssm-agent
+  ansible.builtin.dnf:
+    name: "https://s3.{{ aws_region }}.amazonaws.com/amazon-ssm-{{ aws_region }}/latest/linux_{{ ssm_agent_arch }}/amazon-ssm-agent.rpm"
+    state: present
+    disable_gpg_check: true
+  vars:
+    ssm_agent_arch: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+  register: ssm_agent_install
+  retries: 3
+  delay: 15
+  until: ssm_agent_install is succeeded
+  when: not ssm_agent.stat.exists

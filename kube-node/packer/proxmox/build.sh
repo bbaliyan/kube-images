@@ -8,7 +8,8 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/proxmox-env.sh"
 
 # ---- version pins ------------------------------------------------------------
-versions_dir="$(dirname "${BASH_SOURCE[0]}")/../../versions"
+kube_node_dir="$(dirname "${BASH_SOURCE[0]}")/../.."
+versions_dir="${kube_node_dir}/versions"
 
 pin() { # pin <file> <key>
   python3 -c 'import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))[sys.argv[2]])' "${versions_dir}/$1" "$2"
@@ -31,7 +32,7 @@ helm template cilium cilium \
   --version "${cilium_version}" \
   --namespace kube-system \
   --include-crds \
-  -f helm-values/cilium-values.yaml \
+  -f "${kube_node_dir}/helm-values/cilium-values.yaml" \
   >"${render_dir}/cilium.yaml"
 
 export PKR_VAR_rendered_manifests_dir="${render_dir}"
