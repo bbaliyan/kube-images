@@ -1,14 +1,29 @@
 ---
 # SPDX-License-Identifier: Apache-2.0
-# Bake tasks for the AlmaLinux 10 node image: OS prep, RKE2 install, the
-# bootstrap program and template cleanup. Proxmox-only tasks live in
-# rke2_bake_proxmox.
+# Bake tasks for the AlmaLinux 10 node image: OS prep, RKE2 install and the
+# bootstrap program. Template cleanup lives in rke2_bake_template_prep and
+# provider-only tasks in rke2_bake_<provider>.
 
 - name: os-prep | wait for first-boot cloud-init to finish, rc 2 meaning done with recoverable errors
   ansible.builtin.command: cloud-init status --wait
   register: cloud_init_wait
   changed_when: false
   failed_when: cloud_init_wait.rc not in [0, 2]
+
+# First, so a proxy that re-signs TLS is trusted by every download below.
+- name: os-prep | install the CA certificate
+  ansible.builtin.copy:
+    src: "{{ trusted_ca_path }}"
+    dest: /etc/pki/ca-trust/source/anchors/trusted-ca.crt
+    mode: "0644"
+    owner: root
+    group: root
+  when: trusted_ca_path | length > 0
+
+- name: os-prep | rebuild the trust store
+  ansible.builtin.command: update-ca-trust extract
+  when: trusted_ca_path | length > 0
+  changed_when: true
 
 - name: os-prep | inotify limits
   ansible.builtin.copy:
@@ -194,22 +209,6 @@
   changed_when: false
   tags: [bootstrap]
 
-- name: bootstrap | install the CA certificate
-  ansible.builtin.copy:
-    src: "{{ trusted_ca_path }}"
-    dest: /etc/pki/ca-trust/source/anchors/trusted-ca.crt
-    mode: "0644"
-    owner: root
-    group: root
-  when: trusted_ca_path | length > 0
-  tags: [bootstrap]
-
-- name: bootstrap | rebuild the trust store
-  ansible.builtin.command: update-ca-trust extract
-  when: trusted_ca_path | length > 0
-  changed_when: true
-  tags: [bootstrap]
-
 - name: gitops | create the genesis manifests directory
   ansible.builtin.file:
     path: /opt/kube-compute/manifests
@@ -229,41 +228,3 @@
   loop:
     - cilium.yaml
   when: bake_copy_gitops_manifests
-
-# Everything below is template-prep cleanup and MUST stay last: clones must
-# not inherit this builder's machine identity, SSH host keys, or the Packer
-# build-time SSH key, and cloud-init must re-run fresh on every clone.
-- name: template-prep | clean cloud-init state so clones re-run it fresh
-  ansible.builtin.command: cloud-init clean --logs --seed
-  changed_when: true
-
-- name: template-prep | reset machine-id so clones each generate their own
-  ansible.builtin.file:
-    path: /etc/machine-id
-    state: absent
-
-- name: template-prep | recreate empty machine-id (systemd expects the file to exist)
-  ansible.builtin.file:
-    path: /etc/machine-id
-    state: touch
-    mode: "0444"
-
-- name: template-prep | remove SSH host keys so clones each generate their own
-  ansible.builtin.shell:
-    cmd: rm -f /etc/ssh/ssh_host_*
-  changed_when: true
-
-- name: template-prep | remove the Packer build-time SSH authorized_keys
-  ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/.ssh/authorized_keys"
-    state: absent
-  when: ansible_user != "root"
-
-- name: template-prep | remove root's authorized_keys too, if present
-  ansible.builtin.file:
-    path: /root/.ssh/authorized_keys
-    state: absent
-
-- name: template-prep | clean dnf cache
-  ansible.builtin.command: dnf clean all
-  changed_when: true

@@ -15,3 +15,4 @@
   roles:
     - rke2_bake_common
     - rke2_bake_proxmox
+    - rke2_bake_template_prep
