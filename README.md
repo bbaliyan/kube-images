@@ -20,6 +20,9 @@ bootstrapping from scratch on every apply. Per-cluster identity, secrets, and
 join logic stay a launch-time concern (`kube-compute`'s `node-bootstrap`
 module), not baked here.
 
+The image pins its own RKE2 and Cilium versions in `kube-node/versions/`. See
+the Proxmox README for how to override a pin and the bump order.
+
 ## The bootstrap program is baked
 
 `rke2_bake_common` installs `kube-compute`'s node bootstrap program at

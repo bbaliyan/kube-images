@@ -82,14 +82,13 @@ packer init .
    building, so a token refreshed with `kube-proxmox-login` in the same
    terminal is always picked up (the devcontainer's own export only runs
    once, at shell start).
-2. Resolves `k8s_version` from kube-platform's
-   `platform/platform-versions/values.yaml`. **Do not** set it in
-   `proxmox.auto.pkrvars.hcl`: a var-file entry outranks `build.sh`'s
-   exported `PKR_VAR_k8s_version` and would silently defeat the fetch.
-   Export `PKR_VAR_k8s_version=...` at the shell first for a specific pin.
+2. Reads `k8s_version` from `kube-node/versions/rke2-version.yaml`.
+   **Do not** set it in `proxmox.auto.pkrvars.hcl`: a var-file entry
+   outranks the `PKR_VAR_k8s_version` that `build.sh` exports and would
+   silently defeat the pin.
 3. Renders the boot-time Cilium manifest (`helm template`) into a temp
    dir, for the Ansible provisioner to copy onto the template. The chart
-   version comes from `cilium-version.yaml` in this directory.
+   version comes from `kube-node/versions/cilium-version.yaml`.
 
 Building outside the devcontainer or without `build.sh`? Set `k8s_version`
 in `proxmox.auto.pkrvars.hcl`, render the Cilium manifest yourself the way
@@ -106,11 +105,42 @@ manifests directory. It deletes the copy when the `cilium` DaemonSet in
 `kube-system` is Ready. At first boot, `bootstrap.sh` also downloads Argo CD
 from kube-platform's published `argocd-bootstrap.yaml`.
 
-The Cilium chart version is pinned in `cilium-version.yaml`. Renovate
-updates it with a longer `minimumReleaseAge` than kube-platform's Cilium
-rule, so the platform takes each release first. The values are in
+The Cilium chart version is pinned in `kube-node/versions/cilium-version.yaml`.
+Renovate updates it with a longer `minimumReleaseAge` than kube-platform's
+Cilium rule, so the platform takes each release first. The values are in
 `helm-values/cilium-values.yaml`. They give a working CNI and nothing more.
 The platform manages Cilium after boot.
+
+## Version pins
+
+The image pins its own Cilium and RKE2. It does not read any other
+repository. Both pins are in `kube-node/versions/`, shared by every
+provider:
+
+- `rke2-version.yaml` holds the RKE2 release.
+- `cilium-version.yaml` holds the Cilium chart version.
+
+To build one image with another RKE2 release, export it before the build:
+
+```bash
+export PKR_VAR_k8s_version=v1.37.1+rke2r1
+./build.sh .
+```
+
+Renovate opens a pull request for each RKE2 patch release, 3 days after
+the release. It does not open RKE2 minor or major updates by itself. They
+wait on the Renovate dependency dashboard until the owner approves them.
+
+To move to a new RKE2 minor release:
+
+1. Upgrade the cluster to the new minor with the platform's upgrade plan.
+2. Approve the update on the dependency dashboard, or edit
+   `rke2-version.yaml`, and merge it.
+3. Build the new image.
+
+A new node from an image that is one patch release older than the cluster
+works. A node from an image with a newer minor release than the cluster is
+not supported. Do not build such an image before step 1 is done.
 
 ## Upgrade order
 

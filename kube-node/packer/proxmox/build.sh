@@ -1,26 +1,28 @@
 #!/usr/bin/env bash
-# Wrapper for 'packer build': re-derives Proxmox credentials, resolves the
-# k8s version, and renders the boot-time Cilium manifest before every build.
-# The credentials come from the shared scripts/proxmox-env.sh.
+# Wrapper for 'packer build': re-derives Proxmox credentials, reads the RKE2
+# version from the shared pin file, and renders the boot-time Cilium manifest
+# before every build. The credentials come from the shared scripts/proxmox-env.sh.
 set -euo pipefail
 
 # shellcheck source=../../../scripts/proxmox-env.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/proxmox-env.sh"
 
-# ---- k8s version resolution -------------------------------------------------
-: "${KUBE_PLATFORM_REPO_URL:=https://github.com/bbaliyan/kube-platform.git}"
-: "${KUBE_PLATFORM_REVISION:=main}"
+# ---- version pins ------------------------------------------------------------
+versions_dir="$(dirname "${BASH_SOURCE[0]}")/../../versions"
+
+pin() { # pin <file> <key>
+  python3 -c 'import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))[sys.argv[2]])' "${versions_dir}/$1" "$2"
+}
 
 # A PKR_VAR_* env var loses to a *.auto.pkrvars.hcl entry of the same name, so
 # k8s_version must NOT be set in proxmox.auto.pkrvars.hcl - see README.md.
 if [ -z "${PKR_VAR_k8s_version:-}" ]; then
-  platform_versions_url="$(printf '%s' "${KUBE_PLATFORM_REPO_URL}" | sed -E 's#^https://github\.com/#https://raw.githubusercontent.com/#; s#\.git$##')/${KUBE_PLATFORM_REVISION}/platform/platform-versions/values.yaml"
-  PKR_VAR_k8s_version="$(curl -fsSL "${platform_versions_url}" | python3 -c 'import sys, yaml; print(yaml.safe_load(sys.stdin)["k8sVersion"])')"
+  PKR_VAR_k8s_version="$(pin rke2-version.yaml rke2Version)"
   export PKR_VAR_k8s_version
 fi
 
 # ---- Cilium manifest render (build host, not the VM being baked) ----------
-cilium_version="$(python3 -c 'import yaml; print(yaml.safe_load(open("cilium-version.yaml"))["ciliumVersion"])')"
+cilium_version="$(pin cilium-version.yaml ciliumVersion)"
 render_dir="$(mktemp -d)"
 trap 'rm -rf "${render_dir}"' EXIT
 
