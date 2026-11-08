@@ -82,23 +82,42 @@ packer init .
    building, so a token refreshed with `kube-proxmox-login` in the same
    terminal is always picked up (the devcontainer's own export only runs
    once, at shell start).
-2. Resolves `k8s_version`/`cilium_version`/`argocd_version` from kube-platform's
-   `platform/platform-versions/values.yaml`, so the image can't silently
-   drift from what Argo CD will run. **Do not** set these in
-   `proxmox.auto.pkrvars.hcl` — a var-file entry outranks `build.sh`'s
-   exported `PKR_VAR_*` and would silently defeat the fetch; export
-   `PKR_VAR_cilium_version=...` (etc.) at the shell first for a specific pin.
-3. Renders the genesis Cilium/Argo CD manifests (`helm template`) into a temp
-   dir, for the Ansible provisioner to copy onto the template. Rendered here
-   rather than at `kube-compute` apply time because Argo CD's chart alone is
-   ~1.9 MB with CRDs — well past Proxmox's 1 MiB cicustom snippet cap.
+2. Resolves `k8s_version` from kube-platform's
+   `platform/platform-versions/values.yaml`. **Do not** set it in
+   `proxmox.auto.pkrvars.hcl`: a var-file entry outranks `build.sh`'s
+   exported `PKR_VAR_k8s_version` and would silently defeat the fetch.
+   Export `PKR_VAR_k8s_version=...` at the shell first for a specific pin.
+3. Renders the boot-time Cilium manifest (`helm template`) into a temp
+   dir, for the Ansible provisioner to copy onto the template. The chart
+   version comes from `cilium-version.yaml` in this directory.
 
-Building outside the devcontainer or without `build.sh`? Set all three
-resolved variables explicitly in `proxmox.auto.pkrvars.hcl` (see
-`proxmox.auto.pkrvars.hcl.example`), render the manifests yourself the same
-way `build.sh` does, and pass `-var rendered_manifests_dir=...` on the command line — there's no
-default, so a bare `packer build` fails immediately instead of baking a
-stale or empty manifest.
+Building outside the devcontainer or without `build.sh`? Set `k8s_version`
+in `proxmox.auto.pkrvars.hcl`, render the Cilium manifest yourself the way
+`build.sh` does, and pass `-var rendered_manifests_dir=...` on the command
+line. There is no default, so a bare `packer build` fails at once instead of
+baking a stale or empty manifest.
+
+## What the image holds
+
+The image does not hold Argo CD. It holds a minimal Cilium manifest at
+`/opt/kube-compute/manifests/cilium.yaml`. The node needs a CNI when RKE2
+starts. kube-compute's `bootstrap.sh` copies the manifest into RKE2's
+manifests directory. It deletes the copy when the `cilium` DaemonSet in
+`kube-system` is Ready. At first boot, `bootstrap.sh` also downloads Argo CD
+from kube-platform's published `argocd-bootstrap.yaml`.
+
+The Cilium chart version is pinned in `cilium-version.yaml`. Renovate
+updates it with a longer `minimumReleaseAge` than kube-platform's Cilium
+rule, so the platform takes each release first. The values are in
+`helm-values/cilium-values.yaml`. They give a working CNI and nothing more.
+The platform manages Cilium after boot.
+
+## Upgrade order
+
+Rebuild the images first, then upgrade the kube-compute module. An image
+built from this change works only with a kube-compute module that downloads
+Argo CD itself. An older image with the new module, or a new image with the
+old module, fails at first boot.
 
 ## Profiling a slow build
 
@@ -127,7 +146,7 @@ UI, and tail e.g. `journalctl -f` or `/var/log/dnf.log` there.
 ## VM template naming
 
 Self-descriptive:
-`almalinux10-kube-image-<k8s_version>-<cilium_version>-<argocd_version>-<build-date>`.
+`almalinux10-kube-image-<k8s_version>-<cilium_version>-<build-date>`.
 Point `kube-compute`'s `proxmox-control-plane`/`proxmox-node-pool` modules
 at the resulting template's numeric Proxmox VM ID via
 `proxmox_template_vm_id`. The name is documentation only — kube-compute

@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
+# The Cilium chart release baked into the image as the boot-time CNI.
+# renovate: datasource=helm depName=cilium registryUrl=https://helm.cilium.io/
+ciliumVersion: 1.20.4

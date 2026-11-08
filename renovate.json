@@ -10,5 +10,14 @@
     "gitlabci",
     "devcontainer",
     "custom.regex"
+  ],
+  "packageRules": [
+    {
+      "description": "The platform takes each Cilium release first. This image only needs a working boot-time CNI, so it waits 14 days longer than the platform's rule.",
+      "matchPackageNames": [
+        "cilium"
+      ],
+      "minimumReleaseAge": "15 days"
+    }
   ]
 }
