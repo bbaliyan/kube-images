@@ -126,6 +126,68 @@
     executable: /bin/bash
   changed_when: true
 
+# A new domain and file type only: no existing domain changes, so a bad
+# module fails the bake here and cannot affect a boot. The udica templates
+# come with container-selinux and must load in the same transaction.
+- name: selinux | detect whether SELinux is enabled on the build host
+  ansible.builtin.command: selinuxenabled
+  register: selinux_enabled
+  changed_when: false
+  failed_when: selinux_enabled.rc not in [0, 1]
+
+- name: selinux | skip the node-exporter policy module, SELinux is disabled
+  ansible.builtin.debug:
+    msg: SELinux is disabled on the build host, so the node-exporter policy module is not installed.
+  when: selinux_enabled.rc != 0
+
+- name: selinux | install the node-exporter policy module and label its textfile directory
+  when: selinux_enabled.rc == 0
+  block:
+    - name: selinux | copy the node-exporter policy module
+      ansible.builtin.copy:
+        src: node_exporter.cil
+        dest: /usr/local/share/node_exporter.cil
+        mode: "0644"
+        owner: root
+        group: root
+      register: node_exporter_cil
+
+    - name: selinux | list the installed policy modules
+      ansible.builtin.command: semodule -l
+      register: policy_modules
+      changed_when: false
+
+    - name: selinux | load the node-exporter policy module with the udica templates
+      ansible.builtin.command:
+        argv:
+          - semodule
+          - -i
+          - /usr/share/udica/templates/base_container.cil
+          - /usr/share/udica/templates/net_container.cil
+          - /usr/local/share/node_exporter.cil
+      when: node_exporter_cil.changed or (policy_modules.stdout_lines | select('match', '^node_exporter(\s|$)') | list | length == 0)
+      changed_when: true
+
+    - name: selinux | create the textfile collector directory
+      ansible.builtin.file:
+        path: /var/lib/node_exporter/textfile_collector
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+
+    - name: selinux | label the textfile collector directory for the node-exporter domain
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+          local_rules="$(semanage fcontext -l -C)"
+          if ! grep -qF '/var/lib/node_exporter/textfile_collector(/.*)?' <<<"${local_rules}"; then
+            semanage fcontext -a -t node_exporter.textfile_t '/var/lib/node_exporter/textfile_collector(/.*)?'
+          fi
+          restorecon -R /var/lib/node_exporter
+        executable: /bin/bash
+      changed_when: true
+
 # The same repositories get.rke2.io adds. The minor-version repo keeps every
 # recent patch build available at once, so all four packages are installed
 # in one transaction pinned to the exact version; installed separately,
