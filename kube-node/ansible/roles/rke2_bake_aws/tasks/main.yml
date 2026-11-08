@@ -12,6 +12,9 @@
     path: /usr/bin/amazon-ssm-agent
   register: ssm_agent
 
+# The GPG check is off on purpose. The RPM comes over HTTPS from the vendor's
+# own bucket, and only when the binary is missing. AWS rotates the signing key
+# about once a year, so a key pinned here would break builds.
 - name: aws | install amazon-ssm-agent
   ansible.builtin.dnf:
     name: "https://s3.{{ aws_region }}.amazonaws.com/amazon-ssm-{{ aws_region }}/latest/linux_{{ ssm_agent_arch }}/amazon-ssm-agent.rpm"

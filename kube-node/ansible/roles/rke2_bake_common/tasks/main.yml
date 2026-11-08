@@ -19,11 +19,13 @@
     owner: root
     group: root
   when: trusted_ca_path | length > 0
+  tags: [bootstrap]
 
 - name: os-prep | rebuild the trust store
   ansible.builtin.command: update-ca-trust extract
   when: trusted_ca_path | length > 0
   changed_when: true
+  tags: [bootstrap]
 
 - name: os-prep | inotify limits
   ansible.builtin.copy:
