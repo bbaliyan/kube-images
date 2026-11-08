@@ -151,7 +151,7 @@ old module, fails at first boot.
 
 ## Profiling a slow build
 
-`./build-profile.sh .` runs the same build as `./build.sh .` with Packer/
+`../../scripts/build-profile.sh .` runs the same build as `./build.sh .` with Packer/
 Ansible timing instrumentation turned on, and tees the full output to
 `build-logs/<timestamp>.log` for later review:
 

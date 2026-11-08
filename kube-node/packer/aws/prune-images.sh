@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
-# Deregisters old kube-image AMIs (and their backing snapshots), keeping the
-# N most recent. Packer has no build history or retention of its own.
-# Selects AMIs by the kube-image=true tag that template.pkr.hcl sets and sorts
-# them by CreationDate.
-#
-# --architecture is required and prunes one architecture at a time, so
-# pruning x86_64 builds can never delete the only arm64 AMI (or vice versa).
-# AMIs built before this flag existed have no architecture tag and won't
-# match either value — prune those manually once.
+# Deregisters old kube-image AMIs and their snapshots, and keeps the newest N.
+# It selects AMIs by the kube-image=true tag and sorts them by CreationDate.
+# It prunes one architecture at a time, so it never removes the only AMI of the
+# other architecture. AMIs without an architecture tag match neither value.
 #
 # Usage: ./prune-images.sh --region <aws-region> --architecture <x86_64|arm64> [--keep N] [--dry-run] [--yes]
 #   --region        AWS region the AMIs live in (required)
@@ -63,7 +58,7 @@ if [ -z "$ARCHITECTURE" ]; then
   exit 1
 fi
 
-# --owners self: never touch the AlmaLinux Foundation's own published AMIs.
+# --owners self: never touch AMIs of other accounts.
 mapfile -t AMIS < <(
   aws ec2 describe-images \
     --region "$REGION" \
