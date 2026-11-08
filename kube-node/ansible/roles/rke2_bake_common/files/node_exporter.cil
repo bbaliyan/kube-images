@@ -5,7 +5,9 @@
 ;   node_exporter.process    the container domain (container_t plus the rules below)
 ;   node_exporter.textfile_t the type of the textfile collector directory
 ;
-; Not compiled or loaded by the authors yet: try it on one node first.
+; Loaded and tested on an SELinux-enforcing node: a pod with this domain reads
+; /proc/1/mountinfo and the textfile directory, and the same pod with the default
+; domain is denied.
 
 (block node_exporter
   (blockinherit container)
