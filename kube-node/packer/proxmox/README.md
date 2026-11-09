@@ -115,12 +115,6 @@ platform ref the cluster will use. The kube-compute module compares the RKE2
 minor version of the image with that `k8sVersion`. If they differ, the node
 does not join. Build the image for the same minor version as the platform ref.
 
-## Rebuild after this change
-
-An image built before this change holds a boot program and a Cilium manifest
-that the new kube-compute module does not use. Rebuild the image and the
-Proxmox template, then upgrade the module.
-
 ## Profiling a slow build
 
 `../../scripts/build-profile.sh .` runs the same build as `./build.sh .` with Packer/

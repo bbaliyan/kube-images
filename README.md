@@ -32,7 +32,6 @@ the same minor version as the platform ref.
 Boot logic, Cilium and Argo CD do not come from the image. `kube-compute`
 supplies the boot logic. The node clones the platform ref for the rest.
 
-Renovate does not bump `kube_compute_ref`. Change it by hand.
 
 `trusted_ca_path` optionally bakes a CA certificate into the trust store; set
 `trusted_ca_in_image = true` in `kube-compute` for nodes booting that image.
