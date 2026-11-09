@@ -24,12 +24,12 @@ variable "ami_architecture" {
 
 variable "k8s_version" {
   type        = string
-  description = "RKE2 release to bake, e.g. v1.37.2+rke2r1. build.sh reads it from versions/rke2-version.yaml. To override it, export PKR_VAR_k8s_version. Do not set it in aws.auto.pkrvars.hcl, because that file outranks the environment."
-}
+  description = "RKE2 release to bake, e.g. v1.37.2+rke2r1. Required. Export PKR_VAR_k8s_version with the k8sVersion of the platform ref the cluster will use. Do not set it in aws.auto.pkrvars.hcl, because that file outranks the environment."
 
-variable "rendered_manifests_dir" {
-  type        = string
-  description = "Directory with the pre-rendered cilium.yaml to copy onto the AMI. build.sh always sets it. It has no default, so a bare 'packer build' fails instead of baking a stale manifest."
+  validation {
+    condition     = can(regex("^v[0-9]+[.][0-9]+[.][0-9]+[+]rke2r[0-9]+$", var.k8s_version))
+    error_message = "The value of k8s_version must look like v1.37.1+rke2r1."
+  }
 }
 
 variable "ssh_username" {

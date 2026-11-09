@@ -1,6 +1,6 @@
 # Copy this file to aws.auto.pkrvars.hcl and edit it.
 #
-# Do not set k8s_version here. build.sh reads it from versions/rke2-version.yaml,
+# Do not set k8s_version here. the builder passes it as PKR_VAR_k8s_version,
 # and a value in this file would outrank that. See README.md.
 
 aws_region = "us-east-1"

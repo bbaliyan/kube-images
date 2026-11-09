@@ -75,84 +75,45 @@ packer init .
 ```
 
 `build.sh` is a thin wrapper around `packer build`, not optional boilerplate
-— it does three things a plain `packer build` can't:
+— it does two things a plain `packer build` can't:
 
 1. Re-derives `proxmox_url`/`proxmox_api_token_id`/`proxmox_api_token_secret`
    from the current `PROXMOX_VE_ENDPOINT`/`PROXMOX_VE_API_TOKEN` right before
    building, so a token refreshed with `kube-proxmox-login` in the same
    terminal is always picked up (the devcontainer's own export only runs
    once, at shell start).
-2. Reads `k8s_version` from `kube-node/versions/rke2-version.yaml`.
-   **Do not** set it in `proxmox.auto.pkrvars.hcl`: a var-file entry
-   outranks the `PKR_VAR_k8s_version` that `build.sh` exports and would
-   silently defeat the pin.
-3. Renders the boot-time Cilium manifest (`helm template`) into a temp
-   dir, for the Ansible provisioner to copy onto the template. The chart
-   version comes from `kube-node/versions/cilium-version.yaml`.
+2. Stops with a message if `PKR_VAR_k8s_version` is not set. The image
+   keeps no RKE2 pin. Use the `k8sVersion` of the platform ref the cluster
+   will use. **Do not** set it in `proxmox.auto.pkrvars.hcl`: a var-file
+   entry outranks the environment variable.
 
 Building outside the devcontainer or without `build.sh`? Set `k8s_version`
-in `proxmox.auto.pkrvars.hcl`, render the Cilium manifest yourself the way
-`build.sh` does, and pass `-var rendered_manifests_dir=...` on the command
-line. There is no default, so a bare `packer build` fails at once instead of
-baking a stale or empty manifest.
+on the command line with `-var`.
 
 ## What the image holds
 
-The image does not hold Argo CD. It holds a minimal Cilium manifest at
-`/opt/kube-compute/manifests/cilium.yaml`. The node needs a CNI when RKE2
-starts. kube-compute's `bootstrap.sh` copies the manifest into RKE2's
-manifests directory. It deletes the copy when the `cilium` DaemonSet in
-`kube-system` is Ready. At first boot, `bootstrap.sh` also downloads Argo CD
-from kube-platform's published `argocd-bootstrap.yaml`.
-
-The Cilium chart version is pinned in `kube-node/versions/cilium-version.yaml`.
-Renovate updates it with a longer `minimumReleaseAge` than kube-platform's
-Cilium rule, so the platform takes each release first. The values are in
-`kube-node/helm-values/cilium-values.yaml`. They give a working CNI and nothing more.
-The platform manages Cilium after boot.
+The image holds the OS, RKE2 and generic tools. It has no Cilium, no Argo CD
+and no boot program. kube-compute supplies the boot logic. On a genesis node
+it clones the platform ref and takes Cilium and Argo CD from there.
 
 ## SELinux policy for node-exporter
 
 The image loads a small SELinux module, so node-exporter can run confined on an SELinux-enforcing node. It adds the domain `node_exporter.process` and the file type `node_exporter.textfile_t`. A workload selects the domain with `seLinuxOptions.type: node_exporter.process`. Set this only after the image holds the module, or the pod does not start. The module is not compiled or loaded by the authors yet. For what it does and how to test it on one node first, see [the role README](../../ansible/roles/rke2_bake_common/README.md).
 
 
-## Version pins
+## RKE2 version
 
-The image pins its own Cilium and RKE2. It does not read any other
-repository. Both pins are in `kube-node/versions/`, shared by every
-provider:
-
-- `rke2-version.yaml` holds the RKE2 release.
-- `cilium-version.yaml` holds the Cilium chart version.
-
-To build one image with another RKE2 release, export it before the build:
+The image keeps no version pin. Set the RKE2 release before the build:
 
 ```bash
 export PKR_VAR_k8s_version=v1.37.1+rke2r1
 ./build.sh .
 ```
 
-Renovate opens a pull request for each RKE2 patch release, 3 days after
-the release. It does not open RKE2 minor or major updates by itself. They
-wait on the Renovate dependency dashboard until the owner approves them.
-
-To move to a new RKE2 minor release:
-
-1. Upgrade the cluster to the new minor with the platform's upgrade plan.
-2. Approve the update on the dependency dashboard, or edit
-   `rke2-version.yaml`, and merge it.
-3. Build the new image.
-
-A new node from an image that is one patch release older than the cluster
-works. A node from an image with a newer minor release than the cluster is
-not supported. Do not build such an image before step 1 is done.
-
-## Upgrade order
-
-Rebuild the images first, then upgrade the kube-compute module. An image
-built from this change works only with a kube-compute module that downloads
-Argo CD itself. An older image with the new module, or a new image with the
-old module, fails at first boot.
+Use the `k8sVersion` from `platform/platform-versions/values.yaml` at the
+platform ref the cluster will use. The kube-compute module compares the RKE2
+minor version of the image with that `k8sVersion`. If they differ, the node
+does not join. Build the image for the same minor version as the platform ref.
 
 ## Profiling a slow build
 
@@ -181,7 +142,7 @@ UI, and tail e.g. `journalctl -f` or `/var/log/dnf.log` there.
 ## VM template naming
 
 Self-descriptive:
-`almalinux10-kube-image-<k8s_version>-<cilium_version>-<build-date>`.
+`almalinux10-kube-image-<k8s_version>-<build-date>`.
 Point `kube-compute`'s `proxmox-control-plane`/`proxmox-node-pool` modules
 at the resulting template's numeric Proxmox VM ID via
 `proxmox_template_vm_id`. The name is documentation only — kube-compute

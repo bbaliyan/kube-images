@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Automerge: grouped patch PRs and minor PRs merge once the required commit check passes (ruleset). Merging only changes main; images are built when the operator runs the build. RKE2 patch updates wait 3 days. RKE2 minor and major updates open only after the owner approves them on the dependency dashboard.",
+  "description": "Automerge: grouped patch PRs and minor PRs merge once the required commit check passes (ruleset). Merging only changes main; images are built when the operator runs the build.",
   "extends": [
     "local>bbaliyan/renovate-config"
   ],
@@ -10,36 +10,5 @@
     "gitlabci",
     "devcontainer",
     "custom.regex"
-  ],
-  "packageRules": [
-    {
-      "description": "The platform takes each Cilium release first. This image only needs a working boot-time CNI, so it waits 14 days longer than the platform's rule.",
-      "matchPackageNames": [
-        "cilium"
-      ],
-      "minimumReleaseAge": "15 days"
-    },
-    {
-      "description": "RKE2 patch releases wait 3 days after release.",
-      "matchPackageNames": [
-        "rancher/rke2"
-      ],
-      "matchUpdateTypes": [
-        "patch"
-      ],
-      "minimumReleaseAge": "3 days"
-    },
-    {
-      "description": "A cluster must move to a new minor release first, so minor and major updates are held until the owner approves them on the dependency dashboard.",
-      "matchPackageNames": [
-        "rancher/rke2"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "major"
-      ],
-      "dependencyDashboardApproval": true,
-      "automerge": false
-    }
   ]
 }

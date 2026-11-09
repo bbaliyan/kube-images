@@ -15,9 +15,8 @@
       ansible.builtin.assert:
         that:
           - k8s_version is defined and k8s_version is match('^v[0-9]+[.][0-9]+[.][0-9]+[+]rke2r[0-9]+$')
-          - rendered_manifests_dir is defined and rendered_manifests_dir | length > 0
           - aws_region is defined and aws_region | length > 0
-        fail_msg: k8s_version, rendered_manifests_dir and aws_region come from template.pkr.hcl. Build with build.sh.
+        fail_msg: k8s_version and aws_region come from template.pkr.hcl. Build with build.sh.
       tags: [always]
   roles:
     - rke2_bake_common
