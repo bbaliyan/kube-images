@@ -1,6 +1,6 @@
 # rke2_bake_common
 
-Bake tasks that the Proxmox and AWS node images share: OS preparation, RKE2 and the bootstrap program.
+Bake tasks that the Proxmox and AWS node images share: OS preparation, and RKE2.
 
 ## The node-exporter SELinux module
 

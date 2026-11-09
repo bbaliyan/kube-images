@@ -57,12 +57,7 @@ variable "ssh_private_key_file" {
 
 variable "k8s_version" {
   type        = string
-  description = "RKE2 release string to bake, e.g. v1.36.1+rke2r1. Resolved automatically by build.sh — do not set in proxmox.auto.pkrvars.hcl, it silently outranks build.sh's fetch."
-}
-
-variable "rendered_manifests_dir" {
-  type        = string
-  description = "Directory containing the pre-rendered cilium.yaml to copy onto the template. Always set by build.sh — no default, so a bare 'packer build' fails loudly instead of baking a stale manifest."
+  description = "Required. Export PKR_VAR_k8s_version with the k8sVersion of the platform ref the cluster will use. Do not set it in proxmox.auto.pkrvars.hcl, because that file outranks the environment."
 }
 
 variable "trusted_ca_path" {

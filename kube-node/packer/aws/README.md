@@ -2,13 +2,13 @@
 
 This template bakes an RKE2 node image as an AWS AMI. The base image is the AlmaLinux 10 AMI of the AlmaLinux OS Foundation. No seed step is needed.
 
-The image has RKE2 and a minimal Cilium manifest. It does not have Argo CD. The RKE2 and Cilium versions come from `kube-node/versions/`. The Ansible role `rke2_bake_common` is the same role that the Proxmox build uses. The role `rke2_bake_aws` adds the AWS-only part.
+The image has the OS, RKE2 and generic tools. It has no Cilium, no Argo CD and no version pin. The Ansible role `rke2_bake_common` is the same role that the Proxmox build uses. The role `rke2_bake_aws` adds the AWS-only part.
 
 ## Prerequisites
 
 - AWS credentials in the standard credential chain. If you use AWS SSO, run `aws sso login` first.
 - The [Session Manager plugin for the AWS CLI](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) on the build host.
-- `aws`, `helm`, `packer`, `ansible` and `python3` with `PyYAML` on the build host.
+- `aws`, `packer`, `ansible` and `python3` with `PyYAML` on the build host.
 - A build subnet that can reach the Systems Manager endpoints and the package repositories. The build instance has no public IP address by default.
 
 The build connects to the instance over Session Manager. The instance needs no inbound security group rule. The connection is slower than plain SSH, because the build must open a new session after the reboot.
@@ -20,10 +20,7 @@ The build connects to the instance over Session Manager. The instance needs no i
 3. Edit `aws.auto.pkrvars.hcl`. Set `aws_region`. If the account has no default VPC, also set `vpc_id` and `subnet_id`.
 4. Run `./build.sh .`.
 
-`build.sh` does two things that `packer build` does not:
-
-1. It reads the RKE2 version from `kube-node/versions/rke2-version.yaml`. To build with another version, run `PKR_VAR_k8s_version=v1.37.1+rke2r1 ./build.sh .`. Do not set `k8s_version` in `aws.auto.pkrvars.hcl`. That file outranks the environment.
-2. It renders the Cilium manifest with `helm template` from `kube-node/versions/cilium-version.yaml` and `kube-node/helm-values/cilium-values.yaml`. The Proxmox build uses the same files.
+`build.sh` needs the RKE2 version in `PKR_VAR_k8s_version`. If it is not set, the script stops with a message. Use the `k8sVersion` of the platform ref the cluster will use, for example `PKR_VAR_k8s_version=v1.37.1+rke2r1 ./build.sh .`. Build the image for the same minor version as that `k8sVersion`, or the node does not join. Do not set `k8s_version` in `aws.auto.pkrvars.hcl`. That file outranks the environment.
 
 The default build is for x86_64. For arm64, set both the architecture and the instance type as environment variables, because `build.sh` passes its arguments to `packer init`:
 
@@ -37,9 +34,9 @@ A real build needs an AWS account. The checks in this repository do not run it.
 
 ## The image name and tags
 
-The name is `almalinux10-<architecture>-kube-image-<rke2 version>-<cilium version>-<date>-<suffix>`. The suffix is the `BUILD_ID` environment variable, or 8 random characters. The name is for people. Nothing checks it.
+The name is `almalinux10-<architecture>-kube-image-<rke2 version>-<date>-<suffix>`. The suffix is the `BUILD_ID` environment variable, or 8 random characters. The name is for people. Nothing checks it.
 
-Every AMI has these tags: `kube-image`, `k8s-version`, `cilium-version`, `build-date`, `build-id`, `base-distro`, `architecture` and `source-ami-id`. All copies of one build share the same `build-id`. Use it to find the AMI in each region.
+Every AMI has these tags: `kube-image`, `k8s-version`, `build-date`, `build-id`, `base-distro`, `architecture` and `source-ami-id`. All copies of one build share the same `build-id`. Use it to find the AMI in each region.
 
 To use the image, set `os_image_ami_id` in the kube-compute AWS modules.
 
@@ -138,7 +135,7 @@ The hook has limits:
 - It runs on the build instance only. It cannot change the build template, the network or the AMI settings.
 - It must set `become: true` itself.
 - It must keep the Session Manager agent working and must not remove the build user. The build needs both until the cleanup.
-- It must not change the RKE2 install or the Cilium manifest. Change the pin files instead.
+- It must not change the RKE2 install install.
 - The cleanup runs after it. The cleanup removes the machine ID, the SSH host keys, the build SSH key and the cloud-init state. Changes to those do not reach the image.
 
 ## SELinux policy for node-exporter

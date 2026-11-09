@@ -20,24 +20,17 @@ bootstrapping from scratch on every apply. Per-cluster identity, secrets, and
 join logic stay a launch-time concern (`kube-compute`'s `node-bootstrap`
 module), not baked here.
 
-The image pins its own RKE2 and Cilium versions in `kube-node/versions/`. See
-the Proxmox README for how to override a pin and the bump order.
+The image holds the OS, RKE2 and generic tools only. It has no version pin of
+its own. The builder sets the RKE2 version with `PKR_VAR_k8s_version`. Use the
+`k8sVersion` that `platform/platform-versions/values.yaml` sets at the platform
+ref the cluster will use.
 
-## The bootstrap program is baked
+The `kube-compute` module compares the RKE2 minor version of the image with
+that `k8sVersion`. If they differ, the node does not join. Build the image for
+the same minor version as the platform ref.
 
-`rke2_bake_common` installs `kube-compute`'s node bootstrap program at
-`/opt/kube-compute/bootstrap.sh`, from the commit pinned in its `defaults/main.yml`;
-bump the pin when that program changes. The `kube-compute` module writes the sha256
-of its own `bootstrap.sh` into `node.env`. The baked program hashes itself and refuses
-to run if the two differ, so an image and a module with different programs fail at
-boot with a clear message.
-
-Roll out a change to the bootstrap program in this order:
-
-1. Merge the change in `kube-compute`.
-2. Set `kube_compute_ref` here to the merge commit, and merge that change.
-3. Rebuild the images.
-4. Pin and tag the `kube-compute` module in the consumer.
+Boot logic, Cilium and Argo CD do not come from the image. `kube-compute`
+supplies the boot logic. The node clones the platform ref for the rest.
 
 Renovate does not bump `kube_compute_ref`. Change it by hand.
 

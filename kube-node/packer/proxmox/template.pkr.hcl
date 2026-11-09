@@ -19,8 +19,7 @@ locals {
   # (which allow dots).
   k8s_version_safe = replace(var.k8s_version, "+", "-")
   k8s_version_tag  = replace(local.k8s_version_safe, ".", "-")
-  cilium_version   = yamldecode(file("${path.root}/../../versions/cilium-version.yaml")).ciliumVersion
-  image_name       = "${local.distro_slug}-kube-image-${local.k8s_version_safe}-${local.cilium_version}-${local.build_date}"
+  image_name       = "${local.distro_slug}-kube-image-${local.k8s_version_safe}-${local.build_date}"
 }
 
 source "proxmox-clone" "rke2" {
@@ -34,7 +33,7 @@ source "proxmox-clone" "rke2" {
   full_clone           = true
   vm_name              = local.image_name
   template_name        = local.image_name
-  template_description = "RKE2 ${var.k8s_version} / Cilium ${local.cilium_version}, baked ${local.build_date}"
+  template_description = "RKE2 ${var.k8s_version}, baked ${local.build_date}"
   # Semicolon-separated (packer-plugin-proxmox's Tags is a single string,
   # unlike bpg/proxmox's list-typed tags on the seed). seed-vm-<id> traces
   # this build back to the seed it cloned from — Proxmox has no queryable
@@ -99,7 +98,6 @@ build {
     ansible_env_vars = ["ANSIBLE_PIPELINING=True"]
     extra_arguments = [
       "--extra-vars", "k8s_version=${var.k8s_version}",
-      "--extra-vars", "rendered_manifests_dir=${var.rendered_manifests_dir}",
       "--extra-vars", "trusted_ca_path=${var.trusted_ca_path}",
     ]
   }

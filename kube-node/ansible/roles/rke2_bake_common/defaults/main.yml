@@ -1,20 +1,10 @@
 ---
 # SPDX-License-Identifier: Apache-2.0
 k8s_version: ""
-# Always passed via --extra-vars by the invoking Packer template, pointing
-# at build.sh's rendered manifests. No real default — an empty string fails
-# loudly (copy module errors on a nonexistent src) rather than silently
-# baking nothing.
-rendered_manifests_dir: ""
 
-# Kept as toggles in case a future lighter/alternate image variant needs to
-# skip one of these steps; no real build sets either false today.
+# Kept as a toggle in case a future lighter image variant needs to skip it;
+# no real build sets it false today.
 bake_install_rke2: true
-bake_copy_gitops_manifests: true
-
-# Where the node bootstrap program comes from. Bump the ref when it changes.
-kube_compute_raw_base: "https://raw.githubusercontent.com/bbaliyan/kube-compute"
-kube_compute_ref: "5eb0b01eac12e8ebc861520066226925ac6b66b7"
 
 # Optional CA certificate on the build host, baked into the trust store.
 trusted_ca_path: ""

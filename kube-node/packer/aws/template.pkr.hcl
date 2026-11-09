@@ -19,26 +19,24 @@ locals {
   build_date       = formatdate("YYYY-MM-DD", timestamp())
   distro_slug      = "almalinux10" # bump alongside the default base_ami_name
   k8s_version_safe = replace(var.k8s_version, "+", "-")
-  cilium_version   = yamldecode(file("${path.root}/../../versions/cilium-version.yaml")).ciliumVersion
   # A random suffix keeps two builds on the same day apart.
   build_suffix = var.build_id_override != "" ? var.build_id_override : substr(uuidv4(), 0, 8)
   # Identifies one build in every region it is copied to.
   build_id = "${local.build_date}-${local.build_suffix}"
   # The architecture is in the name so an x86_64 and an arm64 build of the same
   # day do not collide. AMI names are unique per account and region.
-  image_name = coalesce(var.ami_name, "${local.distro_slug}-${var.ami_architecture}-kube-image-${local.k8s_version_safe}-${local.cilium_version}-${local.build_date}-${local.build_suffix}")
+  image_name = coalesce(var.ami_name, "${local.distro_slug}-${var.ami_architecture}-kube-image-${local.k8s_version_safe}-${local.build_date}-${local.build_suffix}")
 
   # extra_tags comes last in merge(), so the fixed tags win.
   common_tags = merge(var.extra_tags, {
-    Name           = local.image_name
-    kube-image     = "true"
-    k8s-version    = local.k8s_version_safe
-    cilium-version = local.cilium_version
-    build-date     = local.build_date
-    build-id       = local.build_id
-    base-distro    = local.distro_slug
-    architecture   = var.ami_architecture
-    source-ami-id  = data.amazon-ami.base.id
+    Name          = local.image_name
+    kube-image    = "true"
+    k8s-version   = local.k8s_version_safe
+    build-date    = local.build_date
+    build-id      = local.build_id
+    base-distro   = local.distro_slug
+    architecture  = var.ami_architecture
+    source-ami-id = data.amazon-ami.base.id
   })
   snapshot_tags = merge(var.extra_tags, {
     Name         = local.image_name
@@ -85,7 +83,7 @@ source "amazon-ebs" "rke2" {
   }
 
   ami_name        = local.image_name
-  ami_description = "RKE2 ${var.k8s_version} / Cilium ${local.cilium_version}, baked ${local.build_date} from ${data.amazon-ami.base.id}"
+  ami_description = "RKE2 ${var.k8s_version}, baked ${local.build_date} from ${data.amazon-ami.base.id}"
   tags            = local.common_tags
   snapshot_tags   = local.snapshot_tags
   # The copies carry the tags of the AMI.
@@ -148,7 +146,6 @@ build {
     ansible_env_vars = ["ANSIBLE_PIPELINING=True"]
     extra_arguments = [
       "--extra-vars", "k8s_version=${var.k8s_version}",
-      "--extra-vars", "rendered_manifests_dir=${var.rendered_manifests_dir}",
       "--extra-vars", "aws_region=${var.aws_region}",
       "--extra-vars", "trusted_ca_path=${local.trusted_ca_path}",
       "--extra-vars", "build_proxy_url=${var.build_proxy_url}",

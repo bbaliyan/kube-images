@@ -1,8 +1,7 @@
 ---
 # SPDX-License-Identifier: Apache-2.0
-# Bake tasks for the AlmaLinux 10 node image: OS prep, RKE2 install and the
-# bootstrap program. Template cleanup lives in rke2_bake_template_prep and
-# provider-only tasks in rke2_bake_<provider>.
+# Bake tasks for the AlmaLinux 10 node image: OS prep, RKE2 install.
+# Template cleanup lives in rke2_bake_template_prep and provider-only tasks in rke2_bake_<provider>.
 
 - name: os-prep | wait for first-boot cloud-init to finish, rc 2 meaning done with recoverable errors
   ansible.builtin.command: cloud-init status --wait
@@ -19,13 +18,11 @@
     owner: root
     group: root
   when: trusted_ca_path | length > 0
-  tags: [bootstrap]
 
 - name: os-prep | rebuild the trust store
   ansible.builtin.command: update-ca-trust extract
   when: trusted_ca_path | length > 0
   changed_when: true
-  tags: [bootstrap]
 
 - name: os-prep | inotify limits
   ansible.builtin.copy:
@@ -238,54 +235,3 @@
   delay: 15
   until: rke2_packages is succeeded
   when: bake_install_rke2
-
-# Pre-rendered on the Packer build host (build.sh runs helm template there,
-# not here) and copied in as a plain file. This VM never runs helm or reaches
-# a chart repo.
-- name: bootstrap | create /opt/kube-compute
-  ansible.builtin.file:
-    path: /opt/kube-compute
-    state: directory
-    mode: "0755"
-    owner: root
-    group: root
-  tags: [bootstrap]
-
-- name: bootstrap | install kube-compute's node bootstrap program
-  ansible.builtin.get_url:
-    url: "{{ kube_compute_raw_base }}/{{ kube_compute_ref }}/modules/node-bootstrap/files/bootstrap.sh"
-    dest: /opt/kube-compute/bootstrap.sh
-    mode: "0700"
-    owner: root
-    group: root
-    force: true
-  register: bootstrap_program
-  retries: 3
-  delay: 10
-  until: bootstrap_program is succeeded
-  tags: [bootstrap]
-
-- name: bootstrap | syntax-check the node bootstrap program
-  ansible.builtin.command: bash -n /opt/kube-compute/bootstrap.sh
-  changed_when: false
-  tags: [bootstrap]
-
-- name: gitops | create the genesis manifests directory
-  ansible.builtin.file:
-    path: /opt/kube-compute/manifests
-    state: directory
-    mode: "0700"
-    owner: root
-    group: root
-  when: bake_copy_gitops_manifests
-
-- name: gitops | copy the pre-rendered Cilium manifest
-  ansible.builtin.copy:
-    src: "{{ rendered_manifests_dir }}/{{ item }}"
-    dest: "/opt/kube-compute/manifests/{{ item }}"
-    mode: "0600"
-    owner: root
-    group: root
-  loop:
-    - cilium.yaml
-  when: bake_copy_gitops_manifests
