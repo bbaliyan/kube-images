@@ -78,12 +78,13 @@
 # and freshly created pods become unreachable. "-matched" (not a pinned
 # NVR): BaseOS only keeps this subpackage for the latest kernel, so a pinned
 # request can match nothing.
-- name: os-prep | install ca-certificates, curl, the SELinux tools and policy, and kernel-modules-extra for Cilium's nft_compat
+- name: os-prep | install ca-certificates, curl, git, the SELinux tools and policy, and kernel-modules-extra for Cilium's nft_compat
   ansible.builtin.dnf:
     name:
       - ca-certificates
       - container-selinux
       - curl
+      - git
       - kernel-modules-extra-matched
       - policycoreutils-python-utils
     state: present
