@@ -27,11 +27,10 @@ the Proxmox README for how to override a pin and the bump order.
 
 `rke2_bake_common` installs `kube-compute`'s node bootstrap program at
 `/opt/kube-compute/bootstrap.sh`, from the commit pinned in its `defaults/main.yml`;
-bump the pin when that program changes. The bake fails if the program has no
-`BOOTSTRAP_CONTRACT=<n>` line, so an image never boots a node it cannot bootstrap.
-The baked program and the `kube-compute` module share one contract number. The
-program refuses to run against a `node.env` written for another number, so a
-rebuilt image with a module of a different contract fails at boot.
+bump the pin when that program changes. The `kube-compute` module writes the sha256
+of its own `bootstrap.sh` into `node.env`. The baked program hashes itself and refuses
+to run if the two differ, so an image and a module with different programs fail at
+boot with a clear message.
 
 Roll out a change to the bootstrap program in this order:
 

@@ -269,11 +269,6 @@
   changed_when: false
   tags: [bootstrap]
 
-- name: bootstrap | require the program to declare its bootstrap contract
-  ansible.builtin.command: grep -Eq '^BOOTSTRAP_CONTRACT=[0-9]+$' /opt/kube-compute/bootstrap.sh
-  changed_when: false
-  tags: [bootstrap]
-
 - name: gitops | create the genesis manifests directory
   ansible.builtin.file:
     path: /opt/kube-compute/manifests
