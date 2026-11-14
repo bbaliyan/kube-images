@@ -109,5 +109,11 @@ Run the commit checks inside the `kube-devenv` image:
 make test-commit
 ```
 
+The checks cover Packer formatting and validation, shell scripts, YAML,
+`ansible-lint`, and a module-argument check for the Ansible roles. That check
+fails when a task passes an argument its module does not accept, which
+`ansible-lint` does not catch for `dnf`. It does not cover what a `shell` or
+`command` task does. A real bake proves that.
+
 They need no cloud access or secrets. `make hooks` turns on a pre-commit hook
 that runs the fast subset (`make test-fast`).
