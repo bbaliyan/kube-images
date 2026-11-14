@@ -75,15 +75,22 @@
 # and freshly created pods become unreachable. "-matched" (not a pinned
 # NVR): BaseOS only keeps this subpackage for the latest kernel, so a pinned
 # request can match nothing.
-- name: os-prep | install ca-certificates, curl, git, the SELinux tools and policy, and kernel-modules-extra for Cilium's nft_compat
+#
+# bind-utils (nsupdate for DNS self-registration), dnf-automatic and yum-utils
+# (dnf config-manager) are baked here, so a node's first boot installs no package
+# and works where the repositories cannot be reached.
+- name: os-prep | install ca-certificates, curl, git, bind-utils, dnf-automatic, yum-utils, the SELinux tools and policy, and kernel-modules-extra for Cilium's nft_compat
   ansible.builtin.dnf:
     name:
+      - bind-utils
       - ca-certificates
       - container-selinux
       - curl
+      - dnf-automatic
       - git
       - kernel-modules-extra-matched
       - policycoreutils-python-utils
+      - yum-utils
     state: present
   register: os_packages
   retries: 3
