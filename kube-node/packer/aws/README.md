@@ -2,7 +2,7 @@
 
 This template bakes an RKE2 node image as an AWS AMI. The base image is the AlmaLinux 10 AMI of the AlmaLinux OS Foundation. No seed step is needed.
 
-The image has the OS, RKE2 and generic tools. It has no Cilium, no Argo CD and no version pin. The Ansible role `rke2_bake_common` is the same role that the Proxmox build uses. The role `rke2_bake_aws` adds the AWS-only part.
+The image has the OS, RKE2 and generic tools. It has no Cilium, no Argo CD and no version pin. The Ansible role `rke2_bake_common` is the same role that the Proxmox build uses. The role `rke2_bake_aws` adds the AWS-only part. The role `rke2_bake_aws` also installs AWS CLI v2. The `awscli_version` default of that role sets the version.
 
 ## Prerequisites
 
