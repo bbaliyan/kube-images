@@ -1,0 +1,9 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+# Version 2.22 or later is needed: kube-compute boot steps call
+# `aws s3api put-object --if-none-match`.
+awscli_version: 2.34.0
+# SHA-256 of awscli-exe-linux-<arch>-<version>.zip. Update both with the version.
+awscli_sha256:
+  x86_64: f7137e1c4d6d5cae31fbdcfd1fe03784b71e46aead36ba046674a694e1623aa6
+  aarch64: d1abb2e8fcbc9e7ac3b6acf92bf886af67dfb4d30d77b766cc8a56bd00009aeb

@@ -32,3 +32,49 @@
   ansible.builtin.systemd:
     name: amazon-ssm-agent
     enabled: true
+
+# kube-compute boot steps call `aws ssm get-parameter` and
+# `aws s3api put-object --if-none-match`, so the image carries AWS CLI v2.
+# The zip is pinned by version and SHA-256, and only fetched when the CLI is
+# missing.
+- name: aws | install unzip
+  ansible.builtin.dnf:
+    name: unzip
+    state: present
+  register: unzip_install
+  retries: 3
+  delay: 15
+  until: unzip_install is succeeded
+
+- name: aws | download the AWS CLI v2 zip
+  ansible.builtin.get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_facts['architecture'] }}-{{ awscli_version }}.zip"
+    dest: /tmp/awscliv2.zip
+    checksum: "sha256:{{ awscli_sha256[ansible_facts['architecture']] }}"
+    mode: "0600"
+  register: awscli_download
+  retries: 3
+  delay: 15
+  until: awscli_download is succeeded
+  when: not ansible_check_mode
+
+- name: aws | unpack the AWS CLI v2 zip
+  ansible.builtin.unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: true
+    creates: /usr/local/bin/aws
+  when: not ansible_check_mode
+
+- name: aws | install the AWS CLI v2
+  ansible.builtin.command:
+    cmd: /tmp/aws/install
+    creates: /usr/local/bin/aws
+
+- name: aws | remove the AWS CLI v2 download
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/awscliv2.zip
+    - /tmp/aws

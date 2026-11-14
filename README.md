@@ -40,7 +40,7 @@ The `rke2_bake_common` Ansible role handles OS prep and the RKE2 install, for
 every provider. The `rke2_bake_template_prep` role cleans the image and runs last.
 The `rke2_bake_proxmox` role adds the Proxmox-only package
 (`iscsi-initiator-utils`). The `rke2_bake_aws` role makes sure the AWS Systems
-Manager agent is present.
+Manager agent is present and installs AWS CLI v2 at `/usr/local/bin/aws`.
 
 The names and tags of the images it builds still say `kube-image` (for
 example the `kube-image` tag on Proxmox templates). They are image
