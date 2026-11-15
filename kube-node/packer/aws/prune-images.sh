@@ -21,15 +21,15 @@ ARCHITECTURE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --region)
-      REGION="$2"
+      REGION="${2:?--region needs a value}"
       shift 2
       ;;
     --architecture)
-      ARCHITECTURE="$2"
+      ARCHITECTURE="${2:?--architecture needs a value}"
       shift 2
       ;;
     --keep)
-      KEEP="$2"
+      KEEP="${2:?--keep needs a value}"
       shift 2
       ;;
     --dry-run)
@@ -47,6 +47,11 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if ! [[ "$KEEP" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Error: --keep must be a whole number of 1 or more." >&2
+  exit 1
+fi
 
 if [ -z "$REGION" ]; then
   echo "Error: --region is required (the AWS region these AMIs live in)." >&2

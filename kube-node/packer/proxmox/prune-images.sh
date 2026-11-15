@@ -2,8 +2,8 @@
 # Destroys old kube-image Proxmox templates, keeping the N most recent.
 # Packer has no artifact retention of its own, so this talks to the Proxmox
 # API directly. Selects VMs tagged "kube-image"+"template", explicitly
-# excluding "seed-template". Sorts by name — safe because the build date is
-# the last segment (YYYY-MM-DD), so lexicographic order is also date order.
+# excluding "seed-template". Sorts by the build date at the end of the name
+# (YYYY-MM-DD, then an optional suffix) and, for two builds of one day, by VM ID.
 #
 # Usage: ./prune-images.sh --node <proxmox-node> [--keep N] [--dry-run] [--yes]
 #   --node      Proxmox node the templates live on (required)
@@ -20,11 +20,11 @@ NODE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --node)
-      NODE="$2"
+      NODE="${2:?--node needs a value}"
       shift 2
       ;;
     --keep)
-      KEEP="$2"
+      KEEP="${2:?--keep needs a value}"
       shift 2
       ;;
     --dry-run)
@@ -43,6 +43,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if ! [[ "$KEEP" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Error: --keep must be a whole number of 1 or more." >&2
+  exit 1
+fi
+
 if [ -z "$NODE" ]; then
   echo "Error: --node is required (the Proxmox node these templates live on)." >&2
   exit 1
@@ -58,13 +63,17 @@ AUTH_HEADER="Authorization: PVEAPIToken=${PROXMOX_VE_API_TOKEN}"
 mapfile -t VMS < <(
   curl -fsSk -H "$AUTH_HEADER" "${PROXMOX_VE_ENDPOINT}/api2/json/nodes/${NODE}/qemu" |
     python3 -c "
-import json, sys
+import json, re, sys
 data = json.load(sys.stdin)['data']
+found = []
 for vm in data:
     tags = vm.get('tags', '')
     tag_list = tags.split(';') if tags else []
     if 'kube-image' in tag_list and 'template' in tag_list and 'seed-template' not in tag_list:
-        print(f\"{vm['vmid']}\t{vm['name']}\")
+        match = re.search(r'(\d{4}-\d{2}-\d{2})(?:-\w+)?\Z', vm['name'])
+        found.append((match.group(1) if match else '', int(vm['vmid']), vm['name']))
+for build_date, vmid, name in sorted(found, reverse=True):
+    print(f\"{vmid}\t{name}\")
 "
 )
 
@@ -73,7 +82,7 @@ if [ "${#VMS[@]}" -eq 0 ]; then
   exit 0
 fi
 
-mapfile -t SORTED < <(printf '%s\n' "${VMS[@]}" | sort -t$'\t' -k2 -r)
+SORTED=("${VMS[@]}")
 
 echo "Found ${#SORTED[@]} kube-image template(s) on node ${NODE}:"
 printf '  %s\n' "${SORTED[@]}"

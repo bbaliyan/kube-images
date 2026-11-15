@@ -19,7 +19,9 @@ locals {
   # (which allow dots).
   k8s_version_safe = replace(var.k8s_version, "+", "-")
   k8s_version_tag  = replace(local.k8s_version_safe, ".", "-")
-  image_name       = "${local.distro_slug}-kube-node-${local.k8s_version_safe}-${local.build_date}"
+  # A random suffix keeps two builds on the same day apart.
+  build_suffix = var.build_id_override != "" ? var.build_id_override : substr(uuidv4(), 0, 8)
+  image_name   = "${local.distro_slug}-kube-node-${local.k8s_version_safe}-${local.build_date}-${local.build_suffix}"
 }
 
 source "proxmox-clone" "rke2" {

@@ -70,3 +70,9 @@ variable "trusted_ca_path" {
   default     = ""
   description = "Optional path on the build host to a CA certificate baked into the trust store at /etc/pki/ca-trust/source/anchors/trusted-ca.crt. Set trusted_ca_in_image = true in kube-compute for nodes booting the image."
 }
+
+variable "build_id_override" {
+  type        = string
+  default     = env("BUILD_ID")
+  description = "Suffix that makes the template name unique. It comes from the BUILD_ID environment variable. If it is empty, the build picks a random 8-character suffix."
+}
