@@ -16,18 +16,17 @@ snippet that installs `qemu-guest-agent` on the seed needs a separate SSH
 connection to the Proxmox host itself:
 
 **With an SSH key** (default: the dedicated `tofu` PAM user +
-`~/.ssh/id_ed25519_tofu` — the same PVE-ops account this project's
-`kube-examples` consumer repo already provisions; see its
-`live/proxmox/README.md`, "One-time: user and token setup"):
+`~/.ssh/id_ed25519_tofu` — a dedicated PVE-ops account that you
+create once with a user and an API token):
 
 ```bash
 cd seed
 tofu init
 tofu apply \
-  -var proxmox_node=t630 \
-  -var disk_datastore_id=nvme-pool \
+  -var proxmox_node=pve1 \
+  -var disk_datastore_id=local-lvm \
   -var iso_datastore_id=local \
-  -var proxmox_ssh_address=pve.lan
+  -var proxmox_ssh_address=pve.example.com
 ```
 
 **No SSH key set up?** Pass a password instead — override `proxmox_ssh_user`
@@ -37,10 +36,10 @@ to whatever account you have a password for:
 cd seed
 tofu init
 tofu apply \
-  -var proxmox_node=t630 \
-  -var disk_datastore_id=nvme-pool \
+  -var proxmox_node=pve1 \
+  -var disk_datastore_id=local-lvm \
   -var iso_datastore_id=local \
-  -var proxmox_ssh_address=pve.lan \
+  -var proxmox_ssh_address=pve.example.com \
   -var proxmox_ssh_user=root \
   -var proxmox_ssh_password="$(read -srp 'PVE SSH password: ' p && echo "$p")"
 ```
@@ -162,9 +161,9 @@ the build date embedded in the name), and destroys the rest. It never
 touches the seed (tagged `seed-template`, not `template`).
 
 ```bash
-./prune-images.sh --node t630 --dry-run   # see what would be destroyed
-./prune-images.sh --node t630             # keeps 3 by default, asks to confirm
-./prune-images.sh --node t630 --keep 5 --yes   # non-interactive
+./prune-images.sh --node pve1 --dry-run   # see what would be destroyed
+./prune-images.sh --node pve1             # keeps 3 by default, asks to confirm
+./prune-images.sh --node pve1 --keep 5 --yes   # non-interactive
 ```
 
 Talks to the Proxmox API directly (no SSH needed), using the same

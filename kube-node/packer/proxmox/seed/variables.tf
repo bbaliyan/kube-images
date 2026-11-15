@@ -16,7 +16,7 @@ variable "cpu_type" {
 }
 
 variable "proxmox_ssh_user" {
-  description = "PAM user on the Proxmox host that bpg/proxmox connects as via SSH to upload the vendor-data snippet. Defaults to the dedicated 'tofu' PAM user this project's Proxmox consumers already provision (kube-examples' live/proxmox/README.md) — kept separate from the per-VM guest-access key below to limit blast radius."
+  description = "PAM user on the Proxmox host that bpg/proxmox connects as via SSH to upload the vendor-data snippet. Defaults to a dedicated 'tofu' PAM user that you create once on the host — kept separate from the per-VM guest-access key below to limit blast radius."
   type        = string
   default     = "tofu"
 }
