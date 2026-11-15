@@ -10,17 +10,17 @@ SHELL := bash
 
 CHECKS    ?= /usr/share/kube-devenv/checks
 DEVBOX_ROLE := kube-devbox/ansible/roles/devbox_common
-SCRIPTS   := $(wildcard scripts/*.sh) $(wildcard kube-node/scripts/*.sh) $(wildcard kube-node/packer/*/*.sh) $(wildcard kube-devbox/packer/*/*.sh) $(wildcard kube-devbox/scripts/*.sh) $(wildcard kube-devbox/tests/*.sh) $(DEVBOX_ROLE)/files/devbox-firewall-apply $(DEVBOX_ROLE)/files/devbox-tailscale-up $(wildcard .devcontainer/*.sh) .githooks/pre-commit
+SCRIPTS   := $(wildcard scripts/*.sh) $(wildcard kube-node/scripts/*.sh) $(wildcard kube-node/packer/*/*.sh) $(wildcard kube-devbox/packer/*/*.sh) $(wildcard kube-devbox/scripts/*.sh) $(wildcard kube-devbox/tests/*.sh) $(wildcard kube-node/tests/*.sh) $(DEVBOX_ROLE)/files/devbox-firewall-apply $(DEVBOX_ROLE)/files/devbox-tailscale-up $(wildcard .devcontainer/*.sh) .githooks/pre-commit
 BASE_REF  ?= $(shell git rev-parse --verify --quiet origin/main)
 
 # This repo has no DCO, so commits need no Signed-off-by line.
 export REQUIRE_SIGNOFF := 0
 
 .PHONY: test-commit test-fast hooks fmt lint-scripts lint-yaml lint-ansible \
-	lint-pipelines validate validate-devbox test-devbox test-devbox-container \
+	lint-pipelines validate validate-devbox test-devbox test-devbox-container test-prune \
 	secrets commit-messages
 
-test-commit: test-fast lint-scripts lint-yaml lint-ansible lint-pipelines validate test-devbox commit-messages
+test-commit: test-fast lint-scripts lint-yaml lint-ansible lint-pipelines validate test-devbox test-prune commit-messages
 
 test-fast: fmt secrets
 
@@ -65,6 +65,10 @@ validate-devbox:
 	rm -f /tmp/validate-devbox-key /tmp/validate-devbox-key.pub
 	ssh-keygen -q -t ed25519 -N '' -f /tmp/validate-devbox-key
 	cd kube-devbox/packer/proxmox && packer init . && packer validate -var-file=$(CURDIR)/kube-devbox/tests/proxmox.pkrvars.hcl -var ssh_private_key_file=/tmp/validate-devbox-key .
+
+# The prune scripts, against stand-in aws and curl commands.
+test-prune:
+	bash kube-node/tests/prune-images.sh
 
 # Role checks and acceptance script tests that need no Docker daemon. The container test skips itself where
 # there is none (inside kube-devenv), so run test-devbox-container on a Docker host.
