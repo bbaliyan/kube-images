@@ -34,7 +34,7 @@ A real build needs an AWS account. The checks in this repository do not run it.
 
 ## The image name and tags
 
-The name is `almalinux10-<architecture>-kube-image-<rke2 version>-<date>-<suffix>`. The suffix is the `BUILD_ID` environment variable, or 8 random characters. The name is for people. Nothing checks it.
+The name is `almalinux10-<architecture>-kube-node-<rke2 version>-<date>-<suffix>`. If you set `ami_name_prefix`, the prefix goes in front of the name. The suffix is the `BUILD_ID` environment variable, or 8 random characters. The name is for people. Nothing checks it. `prune-images.sh` counts AMIs with a prefix like any other AMI, so keep that in mind when you set `--keep`.
 
 Every AMI has these tags: `kube-image`, `k8s-version`, `build-date`, `build-id`, `base-distro`, `architecture` and `source-ami-id`. All copies of one build share the same `build-id`. Use it to find the AMI in each region.
 

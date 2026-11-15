@@ -25,7 +25,7 @@ locals {
   build_id = "${local.build_date}-${local.build_suffix}"
   # The architecture is in the name so an x86_64 and an arm64 build of the same
   # day do not collide. AMI names are unique per account and region.
-  image_name = coalesce(var.ami_name, "${local.distro_slug}-${var.ami_architecture}-kube-image-${local.k8s_version_safe}-${local.build_date}-${local.build_suffix}")
+  image_name = coalesce(var.ami_name, "${var.ami_name_prefix}${local.distro_slug}-${var.ami_architecture}-kube-node-${local.k8s_version_safe}-${local.build_date}-${local.build_suffix}")
 
   # extra_tags comes last in merge(), so the fixed tags win.
   common_tags = merge(var.extra_tags, {
