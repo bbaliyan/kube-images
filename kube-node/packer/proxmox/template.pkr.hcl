@@ -48,8 +48,8 @@ source "proxmox-clone" "rke2" {
   # 10/RHEL10 userspace assumes more than — booting under it panics very
   # early ("Attempted to kill init!"). The named model "x86-64-v2-AES"
   # (kube-compute's proxmox-control-plane default, for live-migration
-  # portability) hit the identical panic on real hardware (Dell PowerEdge
-  # T630/older Xeon): it can claim CPUID features KVM can't actually back on
+  # portability) hit the identical panic on real hardware (an older
+  # Xeon server): it can claim CPUID features KVM can't actually back on
   # that silicon. "host" always matches exactly what the physical CPU
   # supports. Live-migration portability doesn't apply here — bake-only VM,
   # never migrated.

@@ -5,10 +5,9 @@
 
 # iscsi-initiator-utils provides iscsiadm and /etc/iscsi — needed by any
 # iSCSI-backed CSI driver (e.g. democratic-csi's freenas-api-iscsi against a
-# TrueNAS backend). Without it, the CSI node plugin's hostPath mount of
-# /etc/iscsi fails outright (confirmed on a real cluster-media apply: the
-# node pod stuck in ContainerCreating with "hostPath type check failed:
-# /etc/iscsi is not a directory").
+# NAS backend). Without it, the CSI node plugin's hostPath mount of
+# /etc/iscsi fails outright (the node pod stays in ContainerCreating with
+# "hostPath type check failed: /etc/iscsi is not a directory").
 - name: proxmox | install iscsi-initiator-utils
   ansible.builtin.dnf:
     name: iscsi-initiator-utils
