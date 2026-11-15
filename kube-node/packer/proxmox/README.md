@@ -142,7 +142,7 @@ UI, and tail e.g. `journalctl -f` or `/var/log/dnf.log` there.
 ## VM template naming
 
 Self-descriptive:
-`almalinux10-kube-image-<k8s_version>-<build-date>`.
+`almalinux10-kube-node-<k8s_version>-<build-date>`.
 Point `kube-compute`'s `proxmox-control-plane`/`proxmox-node-pool` modules
 at the resulting template's numeric Proxmox VM ID via
 `proxmox_template_vm_id`. The name is documentation only — kube-compute
