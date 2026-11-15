@@ -44,6 +44,12 @@ variable "ami_name" {
   description = "Overrides the computed AMI name. Leave it unset in normal use."
 }
 
+variable "ami_name_prefix" {
+  type        = string
+  default     = ""
+  description = "Text put in front of the computed AMI name, for example test- to mark a test build. An EC2 name wildcard that starts with the distribution name then does not match the AMI."
+}
+
 variable "build_id_override" {
   type        = string
   default     = env("BUILD_ID")
