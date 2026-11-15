@@ -44,9 +44,14 @@ expect_not "role holds no private-range address" \
 
 # --- the sshd drop-in
 ssh_out="${work}/sshd-00-devbox.conf"
-ansible localhost -c local -m ansible.builtin.template \
+# The test user can have a HOME that it cannot write to, so Ansible keeps its temp files in the work directory.
+if ! ANSIBLE_LOCAL_TEMP="${work}/ansible" ANSIBLE_REMOTE_TEMP="${work}/ansible" \
+  ansible localhost -c local -m ansible.builtin.template \
   -a "src=${role}/templates/sshd-00-devbox.conf.j2 dest=${ssh_out} mode=0600" \
-  -e devbox_user=almalinux >/dev/null 2>&1 || true
+  -e devbox_user=almalinux >"${work}/ansible.log" 2>&1; then
+  cat "${work}/ansible.log" >&2
+  bad "sshd drop-in renders"
+fi
 for line in \
   "PasswordAuthentication no" \
   "KbdInteractiveAuthentication no" \
@@ -57,6 +62,7 @@ for line in \
   "AllowAgentForwarding yes"; do
   expect "sshd drop-in has: ${line}" grep -qx "$line" "$ssh_out"
 done
+expect "sshd drop-in exists" test -s "$ssh_out"
 expect_not "sshd drop-in does not allow passwords" grep -qiE '^PasswordAuthentication +yes' "$ssh_out"
 
 # --- the firewall script
