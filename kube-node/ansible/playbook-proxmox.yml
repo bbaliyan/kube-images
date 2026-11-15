@@ -14,4 +14,15 @@
   roles:
     - rke2_bake_common
     - rke2_bake_proxmox
+
+# The hook runs here: after the base role and before the cleanup, which
+# removes the build-time SSH key.
+- name: Extra customization
+  ansible.builtin.import_playbook: "{{ extra_playbook_path | default('extra-playbook-none.yml', true) }}"
+
+- name: Image cleanup
+  hosts: all
+  gather_facts: false
+  become: true
+  roles:
     - rke2_bake_template_prep

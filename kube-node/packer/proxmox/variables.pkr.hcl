@@ -76,3 +76,9 @@ variable "build_id_override" {
   default     = env("BUILD_ID")
   description = "Suffix that makes the template name unique. It comes from the BUILD_ID environment variable. If it is empty, the build picks a random 8-character suffix."
 }
+
+variable "extra_playbook_path" {
+  type        = string
+  default     = ""
+  description = "Path on the build host to an Ansible playbook that runs after the base role and before the image cleanup. It works as the same input of the AWS build does."
+}
