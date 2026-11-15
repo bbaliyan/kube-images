@@ -100,6 +100,10 @@ it clones the platform ref and takes Cilium and Argo CD from there.
 The image loads a small SELinux module, so node-exporter can run confined on an SELinux-enforcing node. It adds the domain `node_exporter.process` and the file type `node_exporter.textfile_t`. A workload selects the domain with `seLinuxOptions.type: node_exporter.process`. Set this only after the image holds the module, or the pod does not start. The module is loaded in the image, and node-exporter pods run with this domain. For what it does and how to test it on one node first, see [the role README](../../ansible/roles/rke2_bake_common/README.md).
 
 
+## Customizing the image
+
+`extra_playbook_path` is the path on the build host to an Ansible playbook. It runs after the base roles and before the image cleanup. It is the same input that the AWS build has. A relative path is resolved against the directory where you run Packer. `trusted_ca_path` works as it does on AWS, and it also accepts a relative path.
+
 ## RKE2 version
 
 The image keeps no version pin. Set the RKE2 release before the build:

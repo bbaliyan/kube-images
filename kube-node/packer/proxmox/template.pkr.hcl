@@ -22,6 +22,10 @@ locals {
   # A random suffix keeps two builds on the same day apart.
   build_suffix = var.build_id_override != "" ? var.build_id_override : substr(uuidv4(), 0, 8)
   image_name   = "${local.distro_slug}-kube-node-${local.k8s_version_safe}-${local.build_date}-${local.build_suffix}"
+  # Ansible resolves relative paths against the playbook directory, so both
+  # paths are made absolute here.
+  extra_playbook  = var.extra_playbook_path != "" ? abspath(var.extra_playbook_path) : ""
+  trusted_ca_path = var.trusted_ca_path != "" ? abspath(var.trusted_ca_path) : ""
 }
 
 source "proxmox-clone" "rke2" {
@@ -100,7 +104,8 @@ build {
     ansible_env_vars = ["ANSIBLE_PIPELINING=True"]
     extra_arguments = [
       "--extra-vars", "k8s_version=${var.k8s_version}",
-      "--extra-vars", "trusted_ca_path=${var.trusted_ca_path}",
+      "--extra-vars", "trusted_ca_path=${local.trusted_ca_path}",
+      "--extra-vars", "extra_playbook_path=${local.extra_playbook}",
     ]
   }
 }
