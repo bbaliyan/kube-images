@@ -63,7 +63,7 @@ def tasks_of(path):
 
 def module_of(task):
     for key in task:
-        if key not in TASK_KEYWORDS:
+        if key not in TASK_KEYWORDS and not key.startswith("with_"):
             return key
     return None
 
