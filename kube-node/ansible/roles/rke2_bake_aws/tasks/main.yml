@@ -46,6 +46,11 @@
   delay: 15
   until: unzip_install is succeeded
 
+- name: aws | look for the AWS CLI v2
+  ansible.builtin.stat:
+    path: /usr/local/bin/aws
+  register: awscli_installed
+
 - name: aws | download the AWS CLI v2 zip
   ansible.builtin.get_url:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_facts['architecture'] }}-{{ awscli_version }}.zip"
@@ -56,7 +61,7 @@
   retries: 3
   delay: 15
   until: awscli_download is succeeded
-  when: not ansible_check_mode
+  when: not ansible_check_mode and not awscli_installed.stat.exists
 
 - name: aws | unpack the AWS CLI v2 zip
   ansible.builtin.unarchive:
