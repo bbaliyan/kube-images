@@ -97,7 +97,7 @@ it clones the platform ref and takes Cilium and Argo CD from there.
 
 ## SELinux policy for node-exporter
 
-The image loads a small SELinux module, so node-exporter can run confined on an SELinux-enforcing node. It adds the domain `node_exporter.process` and the file type `node_exporter.textfile_t`. A workload selects the domain with `seLinuxOptions.type: node_exporter.process`. Set this only after the image holds the module, or the pod does not start. The module is not compiled or loaded by the authors yet. For what it does and how to test it on one node first, see [the role README](../../ansible/roles/rke2_bake_common/README.md).
+The image loads a small SELinux module, so node-exporter can run confined on an SELinux-enforcing node. It adds the domain `node_exporter.process` and the file type `node_exporter.textfile_t`. A workload selects the domain with `seLinuxOptions.type: node_exporter.process`. Set this only after the image holds the module, or the pod does not start. The module is loaded in the image, and node-exporter pods run with this domain. For what it does and how to test it on one node first, see [the role README](../../ansible/roles/rke2_bake_common/README.md).
 
 
 ## RKE2 version
