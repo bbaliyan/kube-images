@@ -19,7 +19,7 @@ locals {
   # (which allow dots).
   k8s_version_safe = replace(var.k8s_version, "+", "-")
   k8s_version_tag  = replace(local.k8s_version_safe, ".", "-")
-  image_name       = "${local.distro_slug}-kube-image-${local.k8s_version_safe}-${local.build_date}"
+  image_name       = "${local.distro_slug}-kube-node-${local.k8s_version_safe}-${local.build_date}"
 }
 
 source "proxmox-clone" "rke2" {

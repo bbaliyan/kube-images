@@ -42,10 +42,10 @@ The `rke2_bake_proxmox` role adds the Proxmox-only package
 (`iscsi-initiator-utils`). The `rke2_bake_aws` role makes sure the AWS Systems
 Manager agent is present and installs AWS CLI v2 at `/usr/local/bin/aws`.
 
-The names and tags of the images it builds still say `kube-image` (for
-example the `kube-image` tag on Proxmox templates). They are image
-identifiers, not the repo name. Do not rename them: the prune script and
-existing images depend on them.
+The image names say `kube-node`. The tags still say `kube-image` (for example
+the `kube-image` tag on Proxmox templates and AMIs). The tag is an image
+identifier, not the repo name. Do not rename it: the prune scripts and
+existing images depend on it.
 
 ## Providers
 
