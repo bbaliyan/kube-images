@@ -132,8 +132,8 @@
     executable: /bin/bash
   changed_when: true
 
-# A new domain and file type only: no existing domain changes, so a bad
-# module fails the bake here and cannot affect a boot. The udica templates
+# New domains and file types only: no existing domain gets a new right, so
+# a bad module fails the bake here and cannot affect a boot. The udica templates
 # come with container-selinux and must load in the same transaction.
 - name: selinux | detect whether SELinux is enabled on the build host
   ansible.builtin.command: selinuxenabled
@@ -141,29 +141,32 @@
   changed_when: false
   failed_when: selinux_enabled.rc not in [0, 1]
 
-- name: selinux | skip the node-exporter policy module, SELinux is disabled
+- name: selinux | skip the policy modules, SELinux is disabled
   ansible.builtin.debug:
-    msg: SELinux is disabled on the build host, so the node-exporter policy module is not installed.
+    msg: SELinux is disabled on the build host, so the node-exporter and Agent Substrate policy modules are not installed.
   when: selinux_enabled.rc != 0
 
-- name: selinux | install the node-exporter policy module and label its textfile directory
+- name: selinux | install the policy modules and label their directories
   when: selinux_enabled.rc == 0
   block:
-    - name: selinux | copy the node-exporter policy module
+    - name: selinux | copy the policy modules
       ansible.builtin.copy:
-        src: node_exporter.cil
-        dest: /usr/local/share/node_exporter.cil
+        src: "{{ item }}.cil"
+        dest: "/usr/local/share/{{ item }}.cil"
         mode: "0644"
         owner: root
         group: root
-      register: node_exporter_cil
+      loop:
+        - node_exporter
+        - agent_substrate
+      register: policy_module_files
 
     - name: selinux | list the installed policy modules
       ansible.builtin.command: semodule -l
       register: policy_modules
       changed_when: false
 
-    - name: selinux | load the node-exporter policy module with the udica templates
+    - name: selinux | load the policy modules with the udica templates
       ansible.builtin.command:
         argv:
           - semodule
@@ -171,7 +174,11 @@
           - /usr/share/udica/templates/base_container.cil
           - /usr/share/udica/templates/net_container.cil
           - /usr/local/share/node_exporter.cil
-      when: node_exporter_cil.changed or (policy_modules.stdout_lines | select('match', '^node_exporter(\s|$)') | list | length == 0)
+          - /usr/local/share/agent_substrate.cil
+      when: >-
+        policy_module_files.changed
+        or (policy_modules.stdout_lines | select('match', '^node_exporter(\s|$)') | list | length == 0)
+        or (policy_modules.stdout_lines | select('match', '^agent_substrate(\s|$)') | list | length == 0)
       changed_when: true
 
     - name: selinux | create the textfile collector directory
@@ -192,6 +199,20 @@
           fi
           restorecon -R /var/lib/node_exporter
         executable: /bin/bash
+      changed_when: true
+
+    # The module carries the file context of this directory, so restorecon
+    # sets agent_substrate.state_t and a relabel keeps it.
+    - name: selinux | create the Agent Substrate state directory
+      ansible.builtin.file:
+        path: /var/lib/ate
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+
+    - name: selinux | label the Agent Substrate state directory
+      ansible.builtin.command: restorecon -R /var/lib/ate
       changed_when: true
 
 # The same repositories get.rke2.io adds. The minor-version repo keeps every

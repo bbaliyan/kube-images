@@ -1,0 +1,100 @@
+; SPDX-License-Identifier: Apache-2.0
+; Confined SELinux domains for Agent Substrate, so its pods need no spc_t.
+; Install it together with the udica templates that container-selinux ships
+; (see tasks/main.yml). Adds:
+;   agent_substrate.state_t         the type of the state directory /var/lib/ate
+;   agent_substrate.atelet.process  the domain of the atelet pod (atelet and its objectstore-plugin sidecar)
+;   agent_substrate.worker.process  the domain of a worker pod (the worker, runsc and the gVisor sandbox)
+;
+; Each domain is container_t plus the rules that an audit in permissive mode
+; logged for its pod. Nothing else is allowed.
+
+(block agent_substrate
+  (type state_t)
+  (roletype object_r state_t)
+  (typeattributeset file_type (state_t))
+  (filecon "/var/lib/ate(/.*)?" any (system_u object_r state_t ((s0) (s0))))
+  ; If the directory is missing, the kubelet creates it for the hostPath
+  ; volume, and container-selinux would label it container_var_lib_t.
+  (typetransition container_runtime_t var_lib_t dir "ate" state_t)
+
+  ; What container_t has and the udica templates do not. The audit ran the
+  ; pods as container_t, so they can use any of it without a logged denial.
+  ; The other rules behind a boolean (audit netlink, X server devices) are left out.
+  (block pod
+    (blockabstract pod)
+    (blockinherit container)
+    (blockinherit net_container)
+    (typeattributeset container_net_domain (process))
+    (typeattributeset syslog_client_type (process))
+    (typeattributeset kernel_system_state_reader (process))
+    (typeattributeset corenet_unconfined_type (process))
+    (typeattributeset corenet_unlabeled_type (process))
+    (typeattributeset can_dump_kernel (process))
+    (typeattributeset can_receive_kernel_messages (process))
+    (typeattributeset process_user_target (process))
+    (allow process self (capability (audit_write chown dac_read_search fowner kill setfcap setgid setpcap setuid sys_chroot)))
+    (allow process self (cap_userns (dac_read_search)))
+    (allow process proc_type (file (ioctl lock)))
+    (allow process proc_t (filesystem (remount)))
+    (allow process sysfs_t (dir (mounton)))
+    (allow process container_var_run_t (dir (ioctl lock mounton read)))
+    (allow process container_file_t (filesystem (mount unmount)))
+    (allow process container_file_t (dir (map)))
+    (allow process container_file_t (chr_file (execute map relabelfrom relabelto watch watch_reads)))
+    (allow process container_file_t (blk_file (map relabelfrom relabelto)))
+    (allow process container_file_t (fifo_file (map relabelfrom relabelto)))
+    (allow process container_file_t (lnk_file (map relabelfrom relabelto)))
+    (allow process container_file_t (sock_file (map relabelfrom relabelto)))
+    ; The pods add SYS_ADMIN, so follow container_t if the node turns this boolean on.
+    (booleanif virt_sandbox_use_sys_admin
+      (true
+        (allow process self (capability (sys_admin)))))
+
+    ; The state directory had the label container_var_lib_t, which gives every
+    ; container these directory rights.
+    (allow process state_t (dir (add_name ioctl lock read remove_name write)))
+  )
+
+  (block atelet
+    (blockinherit pod)
+
+    ; Downloads gVisor, unpacks actor images and writes snapshots.
+    (allow process state_t (dir (create rename reparent rmdir setattr)))
+    (allow process state_t (file (create getattr link open read rename setattr unlink write)))
+    (allow process state_t (lnk_file (create setattr)))
+    (allow process state_t (chr_file (unlink)))
+    (allow process state_t (sock_file (unlink)))
+
+    ; Runs the downloaded runsc to probe the CPU features.
+    (allow process state_t (file (execute execute_no_trans map)))
+
+    ; Registers with the kubelet device-plugin socket. The kubelet runs as container_runtime_t.
+    (allow process container_runtime_t (unix_stream_socket (connectto)))
+  )
+
+  (block worker
+    (blockinherit pod)
+
+    ; runsc builds the sandbox in the state directory: the bundle root
+    ; filesystem, its state files and device nodes, and bind mounts on them.
+    (allow process state_t (dir (create mounton rename reparent rmdir setattr watch)))
+    (allow process state_t (file (create getattr lock map mounton open read rename unlink write)))
+    (allow process state_t (lnk_file (getattr read)))
+    (allow process state_t (chr_file (create link rename unlink)))
+
+    ; The worker runs runsc from the state directory, and the sandbox runs the actor binaries.
+    (allow process state_t (file (execute execute_no_trans)))
+
+    ; runsc makes a cgroup for each sandbox.
+    (allow process cgroup_t (dir (add_name create remove_name rmdir write)))
+    (allow process cgroup_t (file (create write)))
+
+    ; gVisor mounts its own procfs and remounts tmpfs and cgroupfs in the pod mount namespace.
+    (allow process proc_t (filesystem (mount unmount)))
+    (allow process tmpfs_t (filesystem (remount)))
+    (allow process cgroup_t (filesystem (remount)))
+
+    (allow process container_ro_file_t (file (unlink)))
+  )
+)

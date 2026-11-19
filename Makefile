@@ -20,7 +20,7 @@ export REQUIRE_SIGNOFF := 0
 	lint-pipelines validate validate-devbox test-devbox test-devbox-container test-prune \
 	secrets commit-messages
 
-test-commit: test-fast lint-scripts lint-yaml lint-ansible lint-pipelines validate test-devbox test-prune commit-messages
+test-commit: test-fast lint-scripts lint-yaml lint-ansible lint-pipelines validate test-devbox test-prune test-selinux commit-messages
 
 test-fast: fmt secrets
 
@@ -65,6 +65,14 @@ validate-devbox:
 	rm -f /tmp/validate-devbox-key /tmp/validate-devbox-key.pub
 	ssh-keygen -q -t ed25519 -N '' -f /tmp/validate-devbox-key
 	cd kube-devbox/packer/proxmox && packer init . && packer validate -var-file=$(CURDIR)/kube-devbox/tests/proxmox.pkrvars.hcl -var ssh_private_key_file=/tmp/validate-devbox-key .
+
+# The SELinux modules of the node image, built in an AlmaLinux 10 container.
+# test-selinux skips where there is no Docker daemon (inside kube-devenv).
+test-selinux:
+	bash kube-node/tests/selinux-modules.sh
+
+test-selinux-integration:
+	SELINUX_REQUIRE_DOCKER=1 bash kube-node/tests/selinux-modules.sh
 
 # The prune scripts, against stand-in aws and curl commands.
 test-prune:
