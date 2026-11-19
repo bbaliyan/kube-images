@@ -69,6 +69,17 @@
     connect_timeout: 15
     post_reboot_delay: 30
 
+# The base image's first boot can install a newer kernel next to the one it ships
+# with, and dnf keeps both. "kernel-modules-extra-matched" then adds a requirement
+# on every installed kernel, and BaseOS keeps the subpackage only for the latest
+# kernel. The old kernel cannot be satisfied, so the install below fails. This
+# runs after the reboot, so the running kernel is the newest and is kept.
+# ansible.builtin.dnf has no option for installonly packages.
+- name: os-prep | remove every kernel except the newest
+  ansible.builtin.command: dnf remove -y --oldinstallonly
+  register: old_kernels
+  changed_when: "'Removed:' in old_kernels.stdout"
+
 # AlmaLinux 10's minimal image ships only kernel-modules-core, which
 # excludes nft_compat (the iptables-nft translation shim). Cilium's default
 # VXLAN mode needs it — without it, Cilium's iptables reconciliation fails
