@@ -44,3 +44,9 @@ containerSecurityContext:
 ```
 
 Warning: set this only after the node image holds the module. If the type is not loaded, the container runtime cannot start the pod.
+
+## The Agent Substrate state directory
+
+The role creates `/var/lib/ate` and labels it `container_file_t:s0` with `semanage fcontext`, so `restorecon` keeps the label. Workloads select the stock `container_engine_t` type, so no policy module is needed.
+
+`make test-selinux-integration` applies the same `semanage` command in an AlmaLinux 10 container and verifies that `/var/lib/ate/x` resolves to `container_file_t:s0`.

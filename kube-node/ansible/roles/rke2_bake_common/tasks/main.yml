@@ -194,6 +194,36 @@
         executable: /bin/bash
       changed_when: true
 
+# The stock container_file_t type at level s0, so a pod in container_engine_t
+# can use the directory with any MCS category. No policy module is needed.
+- name: selinux | skip the Agent Substrate state directory label, SELinux is disabled
+  ansible.builtin.debug:
+    msg: SELinux is disabled on the build host, so the Agent Substrate state directory is not labelled.
+  when: selinux_enabled.rc != 0
+
+- name: selinux | create and label the Agent Substrate state directory
+  when: selinux_enabled.rc == 0
+  block:
+    - name: selinux | create the Agent Substrate state directory
+      ansible.builtin.file:
+        path: /var/lib/ate
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+
+    - name: selinux | label the Agent Substrate state directory for container access
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+          local_rules="$(semanage fcontext -l -C)"
+          if ! grep -qF '/var/lib/ate(/.*)?' <<<"${local_rules}"; then
+            semanage fcontext -a -t container_file_t -r s0 '/var/lib/ate(/.*)?'
+          fi
+          restorecon -R /var/lib/ate
+        executable: /bin/bash
+      changed_when: true
+
 # The same repositories get.rke2.io adds. The minor-version repo keeps every
 # recent patch build available at once, so all four packages are installed
 # in one transaction pinned to the exact version; installed separately,

@@ -18,7 +18,7 @@ export REQUIRE_SIGNOFF := 0
 
 .PHONY: test-commit test-fast hooks fmt lint-scripts lint-yaml lint-ansible \
 	lint-pipelines validate validate-devbox test-devbox test-devbox-container test-prune \
-	secrets commit-messages
+	test-selinux-integration secrets commit-messages
 
 test-commit: test-fast lint-scripts lint-yaml lint-ansible lint-pipelines validate test-devbox test-prune commit-messages
 
@@ -65,6 +65,10 @@ validate-devbox:
 	rm -f /tmp/validate-devbox-key /tmp/validate-devbox-key.pub
 	ssh-keygen -q -t ed25519 -N '' -f /tmp/validate-devbox-key
 	cd kube-devbox/packer/proxmox && packer init . && packer validate -var-file=$(CURDIR)/kube-devbox/tests/proxmox.pkrvars.hcl -var ssh_private_key_file=/tmp/validate-devbox-key .
+
+# Needs a Docker daemon. Run it on a host with Docker.
+test-selinux-integration:
+	bash kube-node/tests/selinux-label.sh
 
 # The prune scripts, against stand-in aws and curl commands.
 test-prune:
